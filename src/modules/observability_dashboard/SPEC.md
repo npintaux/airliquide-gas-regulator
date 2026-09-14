@@ -74,6 +74,7 @@ class AlertChannel(str, Enum):
 @dataclass(frozen=True)
 class RegulatorHealthRecord:
     """Immutable operational snapshot of a single gas regulator gate."""
+
     regulator_id: str
     zone_id: str
     gate_status: GateStatus
@@ -87,6 +88,7 @@ class RegulatorHealthRecord:
 @dataclass(frozen=True)
 class DashboardHealthSnapshot:
     """Immutable fleet health summary aggregate."""
+
     status: FleetStatus
     timestamp: datetime
     active_regulators_count: int
@@ -99,6 +101,7 @@ class DashboardHealthSnapshot:
 @dataclass(frozen=True)
 class IncidentRecord:
     """Immutable representation of a safety trip or envelope violation event."""
+
     incident_id: str
     regulator_id: str
     severity: SeverityLevel
@@ -112,6 +115,7 @@ class IncidentRecord:
 @dataclass(frozen=True)
 class AlertDispatchCommand:
     """Command payload requesting notification routing for an incident."""
+
     incident_id: str
     channel: AlertChannel
     message: str
@@ -120,6 +124,7 @@ class AlertDispatchCommand:
 @dataclass(frozen=True)
 class AlertDispatchReceipt:
     """Immutable confirmation receipt of notification dispatch."""
+
     dispatch_id: str
     incident_id: str
     channel: AlertChannel
@@ -138,14 +143,15 @@ class AlertDispatchReceipt:
 * **Pattern Justification**: The subsystem functions primarily as an operational query, data retrieval, and dispatch orchestration engine. It reads aggregated 1 Hz regulator state documents from Firestore, queries historical telemetry from BigQuery, and writes notification dispatches. There is no multi-step state machine lifecycle or complex chained rule predicate tree. The clean separation between the domain service (`DashboardService`) and data persistence ports (`DashboardRepository`, `AlertDispatchPort`) enables isolated testing with in-memory fakes while cleanly integrating with Firestore and BigQuery in production.
 
 ### Concrete Pattern Domain Files:
-1. `src/modules/observability_dashboard/domain/repository.py`: Declares abstract repository ports `DashboardRepository` and `AlertDispatchPort`.
-2. `src/modules/observability_dashboard/domain/service.py`: Coordinates fleet health aggregation, incident query filtering, root-cause enrichment, and SLA-bounded alert dispatching.
+1. `src/modules/observability_dashboard/domain/repository.py`: Declares abstract repository port `DashboardRepository`.
+2. `src/modules/observability_dashboard/domain/alert_dispatcher.py`: Declares abstract outbound port `AlertDispatchPort` (separated to enforce 1-class-per-file).
+3. `src/modules/observability_dashboard/domain/service.py`: Coordinates fleet health aggregation, incident query filtering, root-cause enrichment, and SLA-bounded alert dispatching.
 
 ### Component Breakdown & PRD Mapping:
 | Component ID | Class Name | Target File | PRD User Story & AC | Logic & Conditions |
 |---|---|---|---|---|
-| **C1** | `DashboardRepository` | `src/modules/observability_dashboard/domain/repository.py` | US-4 (AC-4.1, AC-4.2) | Abstract port defining `get_regulator_health()`, `get_fleet_health()`, `list_incidents()`, and `get_incident_by_id()`. Decouples Firestore and BigQuery queries. |
-| **C2** | `AlertDispatchPort` | `src/modules/observability_dashboard/domain/repository.py` | US-4 (AC-4.3) | Abstract port defining `dispatch_alert(command)` to PagerDuty or Cloud Monitoring notification sinks. |
+| **C1** | `DashboardRepository` | `src/modules/observability_dashboard/domain/repository.py` | US-4 (AC-4.1, AC-4.2) | Abstract port defining `get_regulator_health()`, `list_regulator_health()`, `check_zone_exists()`, `check_regulator_exists()`, `list_incidents()`, and `get_incident_by_id()`. Decouples Firestore and BigQuery queries. |
+| **C2** | `AlertDispatchPort` | `src/modules/observability_dashboard/domain/alert_dispatcher.py` | US-4 (AC-4.3) | Abstract outbound port defining `dispatch_alert(command)` to PagerDuty or Cloud Monitoring notification sinks. |
 | **C3** | `DashboardService` | `src/modules/observability_dashboard/domain/service.py` | US-4 (AC-4.1, AC-4.2, AC-4.3) | Domain coordinator that aggregates fleet health statuses, performs incident filtering, validates triage rules, verifies incident existence prior to alert dispatch, and enforces latency budgets. |
 | **C4** | `RootCauseSummarizer` | `src/modules/observability_dashboard/domain/summarizer.py` | US-4 (AC-4.2) | Synthesizes automated, deterministic root-cause diagnosis text from trip telemetry attributes (e.g. pressure-flow divergence, zero variance detection, threshold breach). |
 
