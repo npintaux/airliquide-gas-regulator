@@ -1,0 +1,458 @@
+openapi: 3.0.3
+info:
+  title: "Fail-Safe Gate & Quality Engine API"
+  version: "1.0.0"
+  description: "Machine-readable OpenAPI contract for the Fail-Safe Gate & Quality Engine subsystem (IGFRG)."
+paths:
+  /v1/gate/evaluate:
+    post:
+      operationId: "evaluateTelemetry"
+      summary: "Evaluate telemetry against safety envelope"
+      description: "Evaluates a batch or single telemetry reading against static bounds, pressure-temperature correlation, and sensor variance rules, determining safety status and issuing trips if needed."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluationRequest"
+      responses:
+        "200":
+          description: "Telemetry evaluation completed successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationResponse"
+        "400":
+          description: "Invalid request payload or malformed telemetry"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: "Safety rule violation or critical envelope trip"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationResponse"
+        "500":
+          description: "Internal server error during evaluation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/gate/close:
+    post:
+      operationId: "closeGate"
+      summary: "Trigger hardware fail-safe close or safe-hold"
+      description: "Dispatches a deterministic sub-50ms hardware close-gate or safe-hold interrupt to physical regulator actuators."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloseGateRequest"
+      responses:
+        "200":
+          description: "Hardware fail-safe close command successfully dispatched"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CloseGateResponse"
+        "400":
+          description: "Invalid close-gate request parameters"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: "Actuation rejected due to hardware interlock conflict"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "Actuator communication or driver failure"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/gate/simulate:
+    post:
+      operationId: "simulateAdversarial"
+      summary: "Execute adversarial quality gate simulation"
+      description: "Injects synthetic perturbations (pressure drops, turbulence, sensor freezes, flow spikes) to verify regulator logic enters a safe state within mandated latency."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdversarialSimulationRequest"
+      responses:
+        "200":
+          description: "Simulation completed successfully with test verdict"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdversarialSimulationResponse"
+        "400":
+          description: "Invalid simulation parameters or scenario definition"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: "Simulation completed with adversarial failure (candidate logic failed safety check)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdversarialSimulationResponse"
+        "500":
+          description: "Simulation runner execution error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/gate/status:
+    get:
+      operationId: "getGateStatus"
+      summary: "Get current fail-safe gate operational status"
+      description: "Retrieves live gate interlock status, offline fallback state, buffer saturation level, and last trip diagnostics."
+      parameters:
+        - name: "regulator_id"
+          in: "query"
+          required: false
+          description: "Filter status by specific regulator identifier"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Current gate operational status"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GateStatusResponse"
+        "400":
+          description: "Invalid query parameters"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: "Regulator state unprocessable or invalid configuration"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "Internal failure reading gate status"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    TelemetryReading:
+      type: object
+      required:
+        - sensor_id
+        - flow_rate
+        - pressure
+        - temperature
+        - timestamp_ns
+      properties:
+        sensor_id:
+          type: string
+          description: "Unique sensor identifier"
+        flow_rate:
+          type: number
+          format: double
+          description: "Measured gas flow rate in standard cubic meters per hour (Sm3/h)"
+        pressure:
+          type: number
+          format: double
+          description: "Measured line pressure in bar"
+        temperature:
+          type: number
+          format: double
+          description: "Measured gas temperature in Kelvin"
+        timestamp_ns:
+          type: integer
+          format: int64
+          description: "Nanosecond-precision sensor capture timestamp"
+
+    EvaluationRequest:
+      type: object
+      required:
+        - request_id
+        - regulator_id
+        - telemetry
+      properties:
+        request_id:
+          type: string
+          description: "Unique idempotency tracking identifier"
+        regulator_id:
+          type: string
+          description: "Target regulator gate identifier"
+        telemetry:
+          $ref: "#/components/schemas/TelemetryReading"
+        recent_history:
+          type: array
+          description: "Recent sliding-window telemetry readings for variance and freeze checks"
+          items:
+            $ref: "#/components/schemas/TelemetryReading"
+        operating_mode:
+          type: string
+          enum: [normal, offline_fallback, bypass, test_simulation]
+          default: normal
+          description: "Operating context for evaluation"
+
+    EvaluationResponse:
+      type: object
+      required:
+        - request_id
+        - regulator_id
+        - is_allowed
+        - status_code
+        - decision_summary
+        - trip_required
+      properties:
+        request_id:
+          type: string
+          description: "Echoed request identifier"
+        regulator_id:
+          type: string
+          description: "Target regulator gate identifier"
+        is_allowed:
+          type: boolean
+          description: "True if telemetry adheres to all safety rules, false if tripped"
+        status_code:
+          type: integer
+          description: "Evaluation status code (200 for pass, 422 for envelope trip)"
+        decision_summary:
+          type: string
+          description: "Summary reasoning for evaluation decision"
+        trip_required:
+          type: boolean
+          description: "Whether immediate hardware close or safe-hold was mandated"
+        violating_rule_id:
+          type: string
+          nullable: true
+          description: "Identifier of the first violating rule if tripped"
+        diagnostics:
+          type: object
+          additionalProperties: true
+          description: "Detailed metric deltas, correlation deviations, or variance stats"
+
+    CloseGateRequest:
+      type: object
+      required:
+        - command_id
+        - regulator_id
+        - target_state
+        - reason
+        - initiated_by
+      properties:
+        command_id:
+          type: string
+          description: "Unique command tracking identifier"
+        regulator_id:
+          type: string
+          description: "Target physical gas regulator gate identifier"
+        target_state:
+          type: string
+          enum: [closed, safe_hold, minimum_safe_flow, physical_bypass]
+          description: "Target physical valve state"
+        reason:
+          type: string
+          description: "Justification for close actuation"
+        initiated_by:
+          type: string
+          description: "Initiating entity (e.g. automated-fail-safe, operator-override, simulation)"
+        timeout_ms:
+          type: integer
+          default: 50
+          description: "Hardware actuation timeout deadline in milliseconds (sub-50ms target)"
+
+    CloseGateResponse:
+      type: object
+      required:
+        - command_id
+        - regulator_id
+        - executed_state
+        - actuation_latency_ms
+        - success
+      properties:
+        command_id:
+          type: string
+          description: "Echoed command identifier"
+        regulator_id:
+          type: string
+          description: "Target regulator identifier"
+        executed_state:
+          type: string
+          description: "State reached by physical hardware"
+        actuation_latency_ms:
+          type: number
+          format: double
+          description: "Time taken to dispatch hardware interrupt in milliseconds"
+        success:
+          type: boolean
+          description: "True if hardware interrupt dispatched successfully within deadline"
+        message:
+          type: string
+          description: "Operational response summary"
+
+    AdversarialScenario:
+      type: object
+      required:
+        - scenario_id
+        - anomaly_type
+        - duration_ms
+        - injection_magnitude
+      properties:
+        scenario_id:
+          type: string
+          description: "Unique identifier for simulation scenario"
+        anomaly_type:
+          type: string
+          enum: [flow_spike, vacuum_drop, noisy_turbulence, frozen_sensor, pressure_disconnect]
+          description: "Synthetic anomaly pattern to inject"
+        duration_ms:
+          type: integer
+          description: "Duration of synthetic anomaly burst in milliseconds"
+        injection_magnitude:
+          type: number
+          format: double
+          description: "Scalar magnitude of the injected perturbation"
+
+    AdversarialSimulationRequest:
+      type: object
+      required:
+        - simulation_id
+        - candidate_version
+        - scenarios
+      properties:
+        simulation_id:
+          type: string
+          description: "Unique CI/CD simulation run identifier"
+        candidate_version:
+          type: string
+          description: "Candidate regulator logic Git commit SHA or version string"
+        scenarios:
+          type: array
+          description: "List of synthetic failure scenarios to execute"
+          items:
+            $ref: "#/components/schemas/AdversarialScenario"
+        max_response_window_ms:
+          type: integer
+          default: 50
+          description: "Maximum allowable window (ms) for candidate logic to trip into safe state"
+
+    AdversarialSimulationResult:
+      type: object
+      required:
+        - scenario_id
+        - passed
+        - reaction_latency_ms
+        - entered_safe_state
+      properties:
+        scenario_id:
+          type: string
+        passed:
+          type: boolean
+          description: "Whether candidate logic entered safe state within deadline"
+        reaction_latency_ms:
+          type: number
+          format: double
+          description: "Measured time to trip in milliseconds"
+        entered_safe_state:
+          type: boolean
+          description: "Whether safe state was successfully actuated"
+        failure_reason:
+          type: string
+          nullable: true
+
+    AdversarialSimulationResponse:
+      type: object
+      required:
+        - simulation_id
+        - candidate_version
+        - overall_verdict
+        - scenarios_passed
+        - scenarios_total
+        - results
+      properties:
+        simulation_id:
+          type: string
+        candidate_version:
+          type: string
+        overall_verdict:
+          type: string
+          enum: [passed, rejected]
+          description: "Gate verdict for PR promotion"
+        scenarios_passed:
+          type: integer
+        scenarios_total:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdversarialSimulationResult"
+
+    GateStatusResponse:
+      type: object
+      required:
+        - regulator_id
+        - valve_state
+        - operational_mode
+        - offline_buffer_used_bytes
+        - offline_buffer_capacity_bytes
+        - last_heartbeat_timestamp_ns
+      properties:
+        regulator_id:
+          type: string
+        valve_state:
+          type: string
+          enum: [open, closed, safe_hold, minimum_safe_flow, physical_bypass]
+        operational_mode:
+          type: string
+          enum: [normal, offline_fallback, bypass, test_simulation]
+        offline_buffer_used_bytes:
+          type: integer
+          format: int64
+          description: "Bytes utilized in circular ring buffer during offline mode"
+        offline_buffer_capacity_bytes:
+          type: integer
+          format: int64
+          description: "Pre-allocated capacity limit (e.g. 2GB)"
+        last_heartbeat_timestamp_ns:
+          type: integer
+          format: int64
+        last_trip_reason:
+          type: string
+          nullable: true
+        last_trip_timestamp_ns:
+          type: integer
+          format: int64
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: "Machine-readable error classification string"
+        message:
+          type: string
+          description: "Human-readable diagnostic message"
+        details:
+          type: object
+          additionalProperties: true
+          description: "Optional contextual error parameters or violation details"
