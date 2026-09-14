@@ -26,6 +26,9 @@ def compute_sig(key: str, data: Any) -> str:
 @pytest.fixture
 def client() -> TestClient:
     """FastAPI test client fixture."""
+    from src.modules.flow_ingestion.entrypoints.api import reset_subsystem_state
+
+    reset_subsystem_state()
     return TestClient(app)
 
 

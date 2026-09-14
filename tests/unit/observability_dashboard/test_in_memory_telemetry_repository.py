@@ -9,7 +9,9 @@ import pytest
 from src.modules.observability_dashboard.adapters.in_memory_telemetry_repository import (
     InMemoryTelemetryRepository,
 )
-from src.modules.observability_dashboard.domain.exceptions import StorageUnavailableError
+from src.modules.observability_dashboard.domain.exceptions import (
+    StorageUnavailableError,
+)
 from src.modules.observability_dashboard.domain.models import (
     GateStatus,
     IncidentRecord,
@@ -130,4 +132,3 @@ def test_in_memory_repository_initial_seeds() -> None:
     )
     assert repo.get_regulator_health("reg-init") == r
     assert repo.get_incident_by_id("inc-init") == inc
-

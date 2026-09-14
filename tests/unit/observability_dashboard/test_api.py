@@ -274,7 +274,11 @@ def test_post_dispatch_alert_not_found() -> None:
     client = TestClient(app)
     res = client.post(
         "/v1/dashboard/alerts",
-        json={"incident_id": "inc-nonexistent", "channel": "PAGERDUTY", "message": "test"},
+        json={
+            "incident_id": "inc-nonexistent",
+            "channel": "PAGERDUTY",
+            "message": "test",
+        },
     )
     assert res.status_code == 404
     assert res.json()["code"] == "INCIDENT_NOT_FOUND"
@@ -328,7 +332,9 @@ def test_unexpected_internal_exceptions() -> None:
     # Monkeypatch resolve_health to raise RuntimeError
     svc = get_dashboard_service()
     orig_health = svc.resolve_health
-    svc.resolve_health = lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("Health crash"))  # type: ignore[assignment]
+    svc.resolve_health = lambda *args, **kwargs: (_ for _ in ()).throw(
+        RuntimeError("Health crash")
+    )  # type: ignore[assignment]
     res1 = client.get("/v1/dashboard/health")
     assert res1.status_code == 500
     assert res1.json()["code"] == "INTERNAL_ERROR"
@@ -336,7 +342,9 @@ def test_unexpected_internal_exceptions() -> None:
     # Monkeypatch resolve_incidents to raise RuntimeError
     svc.resolve_health = orig_health  # type: ignore[assignment]
     orig_inc = svc.resolve_incidents
-    svc.resolve_incidents = lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("Incident crash"))  # type: ignore[assignment]
+    svc.resolve_incidents = lambda *args, **kwargs: (_ for _ in ()).throw(
+        RuntimeError("Incident crash")
+    )  # type: ignore[assignment]
     res2 = client.get("/v1/dashboard/incidents")
     assert res2.status_code == 500
     assert res2.json()["code"] == "INTERNAL_ERROR"
@@ -344,15 +352,45 @@ def test_unexpected_internal_exceptions() -> None:
     # Monkeypatch dispatch_alert to raise RuntimeError and InvalidPayloadError
     svc.resolve_incidents = orig_inc  # type: ignore[assignment]
     orig_dispatch = svc.dispatch_alert
-    from src.modules.observability_dashboard.domain.exceptions import InvalidPayloadError
-    svc.dispatch_alert = lambda *args, **kwargs: (_ for _ in ()).throw(InvalidPayloadError("Payload invalid in svc"))  # type: ignore[assignment]
-    res3 = client.post("/v1/dashboard/alerts", json={"incident_id": "i", "channel": "PAGERDUTY", "message": "m"})
+    from src.modules.observability_dashboard.domain.exceptions import (
+        InvalidPayloadError,
+    )
+
+    svc.dispatch_alert = lambda *args, **kwargs: (_ for _ in ()).throw(
+        InvalidPayloadError("Payload invalid in svc")
+    )  # type: ignore[assignment]
+    res3 = client.post(
+        "/v1/dashboard/alerts",
+        json={"incident_id": "i", "channel": "PAGERDUTY", "message": "m"},
+    )
     assert res3.status_code == 400
     assert res3.json()["code"] == "INVALID_PAYLOAD"
 
-    svc.dispatch_alert = lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("Dispatch crash"))  # type: ignore[assignment]
-    res4 = client.post("/v1/dashboard/alerts", json={"incident_id": "i", "channel": "PAGERDUTY", "message": "m"})
+    svc.dispatch_alert = lambda *args, **kwargs: (_ for _ in ()).throw(
+        RuntimeError("Dispatch crash")
+    )  # type: ignore[assignment]
+    res4 = client.post(
+        "/v1/dashboard/alerts",
+        json={"incident_id": "i", "channel": "PAGERDUTY", "message": "m"},
+    )
     assert res4.status_code == 500
     assert res4.json()["code"] == "INTERNAL_ERROR"
     svc.dispatch_alert = orig_dispatch  # type: ignore[assignment]
 
+
+def test_empty_filter_validation() -> None:
+    """Test empty string query filters return 400 INVALID_FILTER."""
+    app = create_app()
+    client = TestClient(app)
+
+    res_health_zone = client.get("/v1/dashboard/health?zone_id=")
+    assert res_health_zone.status_code == 400
+    assert res_health_zone.json()["code"] == "INVALID_FILTER"
+
+    res_health_reg = client.get("/v1/dashboard/health?regulator_id=")
+    assert res_health_reg.status_code == 400
+    assert res_health_reg.json()["code"] == "INVALID_FILTER"
+
+    res_inc_reg = client.get("/v1/dashboard/incidents?regulator_id=")
+    assert res_inc_reg.status_code == 400
+    assert res_inc_reg.json()["code"] == "INVALID_FILTER"

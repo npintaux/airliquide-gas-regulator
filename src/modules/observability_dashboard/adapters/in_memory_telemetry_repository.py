@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from ..domain.exceptions import StorageUnavailableError
-from ..domain.models import IncidentRecord, RegulatorHealthRecord, SeverityLevel
+from ..domain.models import (
+    GateStatus,
+    IncidentRecord,
+    IncidentStatus,
+    RegulatorHealthRecord,
+    SeverityLevel,
+    VarianceStatus,
+)
 from ..domain.repository import DashboardRepository
 
 
@@ -188,3 +197,76 @@ class InMemoryTelemetryRepository(DashboardRepository):
         """
         self._check_availability()
         return regulator_id in self._regulators
+
+    def seed_defaults(self) -> None:
+        """Seed default plant regulators and incident records for black-box operation."""
+        now = datetime.now(UTC)
+        defaults_regs = [
+            RegulatorHealthRecord(
+                regulator_id="reg-line-4",
+                zone_id="zone-a",
+                gate_status=GateStatus.NORMAL_REGULATION,
+                current_flow_sccm=500.0,
+                current_pressure_psi=45.0,
+                current_temperature_c=25.0,
+                variance_status=VarianceStatus.NORMAL,
+                last_heartbeat=now,
+            ),
+            RegulatorHealthRecord(
+                regulator_id="reg-line-2",
+                zone_id="zone-a",
+                gate_status=GateStatus.MINIMUM_SAFE_FLOW,
+                current_flow_sccm=150.0,
+                current_pressure_psi=48.0,
+                current_temperature_c=24.0,
+                variance_status=VarianceStatus.NORMAL,
+                last_heartbeat=now,
+            ),
+            RegulatorHealthRecord(
+                regulator_id="reg-line-9",
+                zone_id="zone-b",
+                gate_status=GateStatus.NORMAL_REGULATION,
+                current_flow_sccm=480.0,
+                current_pressure_psi=44.0,
+                current_temperature_c=26.0,
+                variance_status=VarianceStatus.NORMAL,
+                last_heartbeat=now,
+            ),
+        ]
+        for reg in defaults_regs:
+            self.save_regulator_health(reg)
+
+        defaults_incidents = [
+            IncidentRecord(
+                incident_id="inc-critical-trip-501",
+                regulator_id="reg-line-4",
+                severity=SeverityLevel.CRITICAL,
+                trip_reason="Pressure-flow divergence detected",
+                root_cause_summary="Automated trip due to correlation divergence",
+                triggered_at=now,
+                status=IncidentStatus.OPEN,
+                pre_trip_telemetry_ref="gs://telemetry/inc-critical-trip-501.json",
+            ),
+            IncidentRecord(
+                incident_id="inc-critical-trip-502",
+                regulator_id="reg-line-4",
+                severity=SeverityLevel.CRITICAL,
+                trip_reason="Sensor variance freeze detected on Oxygen regulator",
+                root_cause_summary="Automated trip due to frozen variance signal",
+                triggered_at=now,
+                status=IncidentStatus.ACKNOWLEDGED,
+                pre_trip_telemetry_ref="gs://telemetry/inc-critical-trip-502.json",
+            ),
+            IncidentRecord(
+                incident_id="inc-uuid-1001",
+                regulator_id="reg-line-4",
+                severity=SeverityLevel.CRITICAL,
+                trip_reason="Critical pressure-flow divergence trip on line 4",
+                root_cause_summary="Automated trip due to correlation divergence",
+                triggered_at=now,
+                status=IncidentStatus.OPEN,
+                pre_trip_telemetry_ref="gs://telemetry/inc-uuid-1001.json",
+            ),
+        ]
+        for inc in defaults_incidents:
+            self.save_incident(inc)

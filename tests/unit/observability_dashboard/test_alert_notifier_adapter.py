@@ -59,5 +59,7 @@ def test_alert_notifier_adapter_channel_failure() -> None:
         channel=AlertChannel.PAGERDUTY,
         message="PagerDuty test",
     )
-    with pytest.raises(AlertDispatchError, match="Downstream notification gateway outage"):
+    with pytest.raises(
+        AlertDispatchError, match="Downstream notification gateway outage"
+    ):
         adapter.dispatch_alert(cmd2)

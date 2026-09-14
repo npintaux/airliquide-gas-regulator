@@ -14,7 +14,6 @@ from src.modules.observability_dashboard.adapters.in_memory_telemetry_repository
     InMemoryTelemetryRepository,
 )
 from src.modules.observability_dashboard.domain.models import (
-    AlertChannel,
     GateStatus,
     IncidentRecord,
     IncidentStatus,

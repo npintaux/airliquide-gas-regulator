@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from src.modules.observability_dashboard.domain.alert_dispatcher import AlertDispatchPort
+from src.modules.observability_dashboard.domain.alert_dispatcher import (
+    AlertDispatchPort,
+)
 from src.modules.observability_dashboard.domain.models import (
     AlertDispatchCommand,
     AlertDispatchReceipt,

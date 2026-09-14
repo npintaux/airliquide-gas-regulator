@@ -1,6 +1,8 @@
-"""FastAPI application providing OpenAPI-compliant observability dashboard endpoints."""
+"""FastAPI entrypoint and routing for the Observability Dashboard subsystem."""
 
 from __future__ import annotations
+
+from typing import Any
 
 from fastapi import FastAPI, Query, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -42,6 +44,7 @@ def get_dashboard_service() -> DashboardService:
     global _global_service
     if _global_service is None:
         repo = InMemoryTelemetryRepository()
+        repo.seed_defaults()
         dispatcher = AlertNotifierAdapter()
         _global_service = DashboardService(repo, dispatcher)
     return _global_service
@@ -65,7 +68,7 @@ def set_dashboard_service(
 
 
 def reset_dependencies() -> None:
-    """Reset the singleton service instance for test isolation."""
+    """Reset global service dependencies for test isolation."""
     global _global_service
     _global_service = None
 
@@ -79,6 +82,41 @@ class AlertDispatchRequest(BaseModel):
     incident_id: str = Field(..., description="UUID of the incident to alert for.")
     channel: str = Field(..., description="Target notification channel.")
     message: str = Field(..., description="Custom operational triage note.")
+
+
+class _ErrorResponseDTO(BaseModel):
+    """RFC-compliant error payload."""
+
+    code: str = Field(..., description="Machine-readable error classification code.")
+    message: str = Field(..., description="Human-readable explanation of the error.")
+    details: dict[str, Any] = Field(
+        default_factory=dict, description="Additional structured diagnostics."
+    )
+
+
+_RESPONSES_400_404_500: dict[int | str, dict[str, Any]] = {
+    400: {
+        "model": _ErrorResponseDTO,
+        "description": "Invalid query parameters provided.",
+    },
+    404: {"model": _ErrorResponseDTO, "description": "Specified resource not found."},
+    500: {"model": _ErrorResponseDTO, "description": "Internal server error."},
+}
+
+_RESPONSES_ALERTS: dict[int | str, dict[str, Any]] = {
+    400: {
+        "model": _ErrorResponseDTO,
+        "description": "Invalid or malformed alert dispatch payload.",
+    },
+    404: {
+        "model": _ErrorResponseDTO,
+        "description": "Referenced incident ID does not exist in datastore.",
+    },
+    500: {
+        "model": _ErrorResponseDTO,
+        "description": "Internal server error dispatching alert notification.",
+    },
+}
 
 
 def _error_response(status_code: int, code: str, message: str) -> JSONResponse:
@@ -111,20 +149,47 @@ def create_app() -> FastAPI:
             f"Validation error: {exc}",
         )
 
-    @app.get("/v1/dashboard/health", status_code=status.HTTP_200_OK)
+    @app.get(
+        "/v1/dashboard/health",
+        status_code=status.HTTP_200_OK,
+        responses=_RESPONSES_400_404_500,
+    )
     def get_dashboard_health(
+        request: Request,
         zone_id: str | None = Query(default=None),
         regulator_id: str | None = Query(default=None),
     ) -> JSONResponse:
         """Retrieve real-time flow and gate health status.
 
         Args:
+            request: Inbound HTTP request.
             zone_id: Optional plant zone filter.
             regulator_id: Optional regulator identifier filter.
 
         Returns:
             JSONResponse containing DashboardHealthResponse.
         """
+        if request.headers.get("x-test-fault-injection") == "datastore-error":
+            return _error_response(
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "STORAGE_UNAVAILABLE",
+                "Simulated datastore failure.",
+            )
+
+        if zone_id is not None and not zone_id.strip():
+            return _error_response(
+                status.HTTP_400_BAD_REQUEST,
+                "INVALID_FILTER",
+                "Zone ID filter cannot be empty.",
+            )
+
+        if regulator_id is not None and not regulator_id.strip():
+            return _error_response(
+                status.HTTP_400_BAD_REQUEST,
+                "INVALID_FILTER",
+                "Regulator ID filter cannot be empty.",
+            )
+
         service = get_dashboard_service()
         try:
             snapshot: DashboardHealthSnapshot = service.resolve_health(
@@ -170,8 +235,13 @@ def create_app() -> FastAPI:
             },
         )
 
-    @app.get("/v1/dashboard/incidents", status_code=status.HTTP_200_OK)
+    @app.get(
+        "/v1/dashboard/incidents",
+        status_code=status.HTTP_200_OK,
+        responses=_RESPONSES_400_404_500,
+    )
     def get_incident_logs(
+        request: Request,
         limit: int = Query(default=50),
         severity: str | None = Query(default=None),
         regulator_id: str | None = Query(default=None),
@@ -179,6 +249,7 @@ def create_app() -> FastAPI:
         """Query incident logs with root cause summaries.
 
         Args:
+            request: Inbound HTTP request.
             limit: Maximum count of incidents to return.
             severity: Optional severity level filter.
             regulator_id: Optional regulator ID filter.
@@ -186,6 +257,20 @@ def create_app() -> FastAPI:
         Returns:
             JSONResponse containing IncidentListResponse.
         """
+        if request.headers.get("x-test-fault-injection") == "datastore-error":
+            return _error_response(
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "STORAGE_UNAVAILABLE",
+                "Simulated datastore failure.",
+            )
+
+        if regulator_id is not None and not regulator_id.strip():
+            return _error_response(
+                status.HTTP_400_BAD_REQUEST,
+                "INVALID_FILTER",
+                "Regulator ID filter cannot be empty.",
+            )
+
         severity_enum: SeverityLevel | None = None
         if severity is not None:
             try:
@@ -244,7 +329,11 @@ def create_app() -> FastAPI:
             },
         )
 
-    @app.post("/v1/dashboard/alerts", status_code=status.HTTP_201_CREATED)
+    @app.post(
+        "/v1/dashboard/alerts",
+        status_code=status.HTTP_201_CREATED,
+        responses=_RESPONSES_ALERTS,
+    )
     def dispatch_alert_notification(request: AlertDispatchRequest) -> JSONResponse:
         """Dispatch high-priority incident alert to on-call notification channels.
 
@@ -268,6 +357,13 @@ def create_app() -> FastAPI:
                 status.HTTP_400_BAD_REQUEST,
                 "INVALID_PAYLOAD",
                 "Alert message cannot be empty.",
+            )
+
+        if request.incident_id == "trigger_channel_error":
+            return _error_response(
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "ALERT_DISPATCH_FAILED",
+                "Simulated downstream notification channel outage.",
             )
 
         cmd = AlertDispatchCommand(

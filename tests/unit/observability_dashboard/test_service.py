@@ -6,7 +6,9 @@ from datetime import UTC, datetime
 
 import pytest
 
-from src.modules.observability_dashboard.domain.alert_dispatcher import AlertDispatchPort
+from src.modules.observability_dashboard.domain.alert_dispatcher import (
+    AlertDispatchPort,
+)
 from src.modules.observability_dashboard.domain.exceptions import (
     AlertDispatchError,
     DispatchTimeoutError,
@@ -30,7 +32,6 @@ from src.modules.observability_dashboard.domain.models import (
 )
 from src.modules.observability_dashboard.domain.repository import DashboardRepository
 from src.modules.observability_dashboard.domain.service import DashboardService
-from src.modules.observability_dashboard.domain.summarizer import RootCauseSummarizer
 
 
 class MockRepository(DashboardRepository):
@@ -194,7 +195,9 @@ def test_resolve_health_filtering() -> None:
         service.resolve_health(zone_id="zone-unknown")
 
     # Filter by unknown regulator
-    with pytest.raises(ResourceNotFoundError, match="Regulator 'reg-unknown' not found"):
+    with pytest.raises(
+        ResourceNotFoundError, match="Regulator 'reg-unknown' not found"
+    ):
         service.resolve_health(regulator_id="reg-unknown")
 
 
@@ -236,7 +239,9 @@ def test_resolve_incidents_validation_and_filtering() -> None:
         status=IncidentStatus.RESOLVED,
     )
 
-    incidents, count = service.resolve_incidents(limit=10, severity=SeverityLevel.CRITICAL)
+    incidents, count = service.resolve_incidents(
+        limit=10, severity=SeverityLevel.CRITICAL
+    )
     assert count == 1
     assert len(incidents) == 1
     assert incidents[0].incident_id == "inc-1"
@@ -257,17 +262,23 @@ def test_dispatch_alert_validation_and_execution() -> None:
     # Empty payload fields
     with pytest.raises(InvalidPayloadError, match="incident_id cannot be empty"):
         service.dispatch_alert(
-            AlertDispatchCommand(incident_id="", channel=AlertChannel.PAGERDUTY, message="Alert")
+            AlertDispatchCommand(
+                incident_id="", channel=AlertChannel.PAGERDUTY, message="Alert"
+            )
         )
     with pytest.raises(InvalidPayloadError, match="message cannot be empty"):
         service.dispatch_alert(
-            AlertDispatchCommand(incident_id="inc-1", channel=AlertChannel.PAGERDUTY, message="")
+            AlertDispatchCommand(
+                incident_id="inc-1", channel=AlertChannel.PAGERDUTY, message=""
+            )
         )
 
     # Nonexistent incident
     with pytest.raises(IncidentNotFoundError, match="Incident 'inc-1' not found"):
         service.dispatch_alert(
-            AlertDispatchCommand(incident_id="inc-1", channel=AlertChannel.PAGERDUTY, message="Alert")
+            AlertDispatchCommand(
+                incident_id="inc-1", channel=AlertChannel.PAGERDUTY, message="Alert"
+            )
         )
 
     # Existing incident
@@ -312,7 +323,9 @@ def test_dispatch_alert_timeout_and_error() -> None:
     service_timeout = DashboardService(repo, timeout_dispatcher)
     with pytest.raises(DispatchTimeoutError, match="Dispatch exceeded SLA budget"):
         service_timeout.dispatch_alert(
-            AlertDispatchCommand(incident_id="inc-1", channel=AlertChannel.PAGERDUTY, message="msg")
+            AlertDispatchCommand(
+                incident_id="inc-1", channel=AlertChannel.PAGERDUTY, message="msg"
+            )
         )
 
     # Downstream error
@@ -320,5 +333,7 @@ def test_dispatch_alert_timeout_and_error() -> None:
     service_err = DashboardService(repo, err_dispatcher)
     with pytest.raises(AlertDispatchError, match="Downstream provider unreachable"):
         service_err.dispatch_alert(
-            AlertDispatchCommand(incident_id="inc-1", channel=AlertChannel.PAGERDUTY, message="msg")
+            AlertDispatchCommand(
+                incident_id="inc-1", channel=AlertChannel.PAGERDUTY, message="msg"
+            )
         )
