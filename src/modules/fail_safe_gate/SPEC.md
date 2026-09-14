@@ -106,9 +106,7 @@ class AdversarialScenario:
     """Immutable scenario specification for CI/CD adversarial testing."""
 
     scenario_id: str
-    anomaly_type: (
-        str  # flow_spike, vacuum_drop, noisy_turbulence, frozen_sensor
-    )
+    anomaly_type: str  # flow_spike, vacuum_drop, noisy_turbulence, frozen_sensor
     duration_ms: int
     injection_magnitude: float
 
