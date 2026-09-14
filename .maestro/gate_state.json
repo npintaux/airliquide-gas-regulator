@@ -7,7 +7,8 @@
     "gate-security",
     "gate-2",
     "gate-3",
-    "gate-4"
+    "gate-4",
+    "all"
   ],
   "remediation_attempts": {
     "gate-0": 0,
@@ -19,7 +20,8 @@
     "gate-2:fail_safe_gate": 0,
     "gate-2:observability_dashboard": 0,
     "gate-3:observability_dashboard": 0,
-    "gate-4:observability_dashboard": 0
+    "gate-4:observability_dashboard": 0,
+    "all": 0
   },
   "execution_history": [
     {
@@ -161,6 +163,16 @@
       "timestamp": "2026-09-14T12:51:52.272991+00:00",
       "stdout_snippet": " 100%\nsrc/modules/observability_dashboard/domain/models.py                                76      0   100%\nsrc/modules/observability_dashboard/domain/repository.py                            16      0   100%\nsrc/modules/observability_dashboard/domain/service.py                               60      0   100%\nsrc/modules/observability_dashboard/domain/summarizer.py                            15      0   100%\nsrc/modules/observability_dashboard/entrypoints/__init__.py                          0      0   100%\nsrc/modules/observability_dashboard/entrypoints/api.py                             113      0   100%\n--------------------------------------------------------------------------------------------------------------\nTOTAL                                                                             1302      0   100%\nRequired test coverage of 100% reached. Total coverage: 100.00%\n======================= 223 passed, 12 warnings in 2.15s =======================\n\u2705 [Gate Test Coverage] Passed.\n",
       "stderr_snippet": "warning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n"
+    },
+    {
+      "stage": "all",
+      "subsystem": "",
+      "exit_code": 0,
+      "attempt": 1,
+      "passed": true,
+      "timestamp": "2026-09-14T12:52:37.356883+00:00",
+      "stdout_snippet": " 100%\nsrc/modules/observability_dashboard/domain/models.py                                76      0   100%\nsrc/modules/observability_dashboard/domain/repository.py                            16      0   100%\nsrc/modules/observability_dashboard/domain/service.py                               60      0   100%\nsrc/modules/observability_dashboard/domain/summarizer.py                            15      0   100%\nsrc/modules/observability_dashboard/entrypoints/__init__.py                          0      0   100%\nsrc/modules/observability_dashboard/entrypoints/api.py                             113      0   100%\n--------------------------------------------------------------------------------------------------------------\nTOTAL                                                                             1302      0   100%\nRequired test coverage of 100% reached. Total coverage: 100.00%\n======================= 223 passed, 12 warnings in 2.21s =======================\n\u2705 [Gate Test Coverage] Passed.\n",
+      "stderr_snippet": ""
     }
   ],
   "circuit_breaker_tripped": false,
