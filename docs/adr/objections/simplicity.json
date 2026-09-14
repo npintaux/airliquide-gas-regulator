@@ -1,0 +1,29 @@
+{
+  "critic": "simplicity",
+  "objections": [
+    {
+      "id": "OBJ-SIM-01",
+      "challenged_adr": "0003",
+      "severity": "high",
+      "claim": "ADR-0003 introduces Google Cloud Pub/Sub with dead-letter topics and asynchronous message fan-out for real-time flow validation, creating an unnecessary distributed event bus layer. Ingestion already operates on Cloud Run, while local edge compute must actuate within 50ms locally. Forcing high-frequency (100ms) validation into Pub/Sub introduces at-least-once deduplication overhead, out-of-order delivery complexities, and distributed tracing machinery that could be eliminated by processing validation synchronously in-memory or streaming directly to BigQuery."
+    },
+    {
+      "id": "OBJ-SIM-02",
+      "challenged_adr": "0002",
+      "severity": "high",
+      "claim": "ADR-0002 mandates a dual-datastore architecture combining Firestore for operational state and BigQuery for historian analytics, requiring asynchronous background data pipelines, dual write paths, and disparate data models. Maintaining live state in Firestore while simultaneously piping the same telemetry to BigQuery creates operational complexity and dual-write consistency issues. A single unified time-series datastore or direct BigQuery ingestion with indexed analytical views would drastically reduce the number of moving database parts."
+    },
+    {
+      "id": "OBJ-SIM-03",
+      "challenged_adr": "0001",
+      "severity": "medium",
+      "claim": "ADR-0001 introduces a split hybrid compute architecture with edge container agents and cloud-hosted Cloud Run microservices, causing dual-write synchronization complexity, configuration drift, and over-engineered edge-to-cloud replay mechanisms. Telemetry is queued locally during offline fallback and replayed to cloud BigQuery/Firestore alongside live traffic, requiring complex reconciliation, deduplication, and schema synchronization across two distinct deployment platforms."
+    },
+    {
+      "id": "OBJ-SIM-04",
+      "challenged_adr": "0004",
+      "severity": "medium",
+      "claim": "ADR-0004 layers Google Cloud Armor, Identity-Aware Proxy (IAP), Cloud KMS Customer-Managed Encryption Keys (CMEK), Secret Manager, and per-packet HMAC-SHA256 edge cryptographic signatures, creating an excessively complex multi-tiered security perimeter for an internal industrial regulation telemetry feed. Enforcing per-packet cryptographic verification (~1-2ms per frame) across 10,000 streams at 100ms intervals combined with Cloud Armor DDoS filtering on a machine-to-machine industrial ingress introduces unnecessary network hops, crypto-key rotation overhead, and operational maintenance burdens where mutual TLS (mTLS) with standard IAM would suffice."
+    }
+  ]
+}

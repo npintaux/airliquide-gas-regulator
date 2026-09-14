@@ -1,0 +1,112 @@
+{
+  "resolutions": [
+    {
+      "objection_id": "OBJ-RES-01",
+      "disposition": "mitigated",
+      "resolution": "Explicitly split actuation responsibilities: physical emergency shutoff and safe-hold valve control are exclusively owned by the local plant edge fail-safe agent (src/modules/fail_safe_gate/) running on on-premises edge hardware over direct fieldbuses (sub-50ms). Cloud Run gate instances operate in an asynchronous supervisory and analytical verification role without physical actuator authority, completely eliminating split-brain valve control and dual-master race conditions.",
+      "adr_updated": "0001"
+    },
+    {
+      "objection_id": "OBJ-RES-02",
+      "disposition": "mitigated",
+      "resolution": "Enforced local buffer bounding and priority-tiered shedding on edge nodes: local offline fallback cache is capped at a fixed 2 GB circular ring buffer. When storage reaches 80% capacity during extended WAN disconnects, shedding prioritizes critical safety and trip events (Tier 1, guaranteed retention), followed by alarm events (Tier 2), while nominal steady-state telemetry (Tier 3) is downsampled or dropped FIFO, preventing edge disk/RAM exhaustion and crash loops.",
+      "adr_updated": "0001"
+    },
+    {
+      "objection_id": "OBJ-RES-03",
+      "disposition": "mitigated",
+      "resolution": "Implemented traffic-shaping and reconnection storm suppression: replaying edge telemetry uses a secondary background queue employing truncated exponential backoff with full jitter (Decorrelated Jitter). Live 100ms telemetry is strictly prioritized over replay traffic at network interfaces and Cloud Run endpoints, and token-bucket rate limits ensure replay traffic cannot saturate Cloud Run ingress or violate the 150ms real-time processing budget.",
+      "adr_updated": "0001"
+    },
+    {
+      "objection_id": "OBJ-RES-04",
+      "disposition": "mitigated",
+      "resolution": "Strictly segregated raw telemetry from Firestore: raw 100ms high-frequency sensor readings are never written to Firestore documents. Firestore exclusively stores low-frequency regulator operational metadata, active safety trip events, and periodic snapshot summaries throttled at 1 Hz per regulator for dashboard listeners, eliminating document write saturation and write contention limits.",
+      "adr_updated": "0002"
+    },
+    {
+      "objection_id": "OBJ-RES-05",
+      "disposition": "mitigated",
+      "resolution": "Introduced in-memory circular diagnostic buffering: Cloud Run ingestion services maintain an ephemeral 60-second sliding ring buffer of high-resolution 100ms sensor telemetry in container memory. Upon any safety trip or envelope violation, the preceding 60-second window is immediately packaged and persisted directly into a Firestore incident document and Cloud Storage, eliminating the BigQuery streaming buffer delay and providing sub-second root-cause visibility during active incidents.",
+      "adr_updated": "0002"
+    },
+    {
+      "objection_id": "OBJ-RES-06",
+      "disposition": "mitigated",
+      "resolution": "Enforced Pub/Sub ordering keys per sensor stream: all telemetry messages published to 'telemetry-events' explicitly set ordering keys based on the composite key (plant_id:regulator_id:sensor_id). Pub/Sub guarantees strict FIFO in-order delivery within each stream ordering key, eliminating spurious variance trips, out-of-order reading anomalies, and false frozen telemetry alerts.",
+      "adr_updated": "0003"
+    },
+    {
+      "objection_id": "OBJ-RES-07",
+      "disposition": "mitigated",
+      "resolution": "Added ingress schema contract pre-validation, DLQ monitoring, and immediate edge backpressure: Cloud Run flow ingestion verifies all packets against versioned Avro/JSON schemas before Pub/Sub publishing. Unparseable frames trigger immediate HTTP 422 responses with diagnostic codes to the edge. Cloud Monitoring alerts trigger automated P1 notifications within 30 seconds if DLQ publish volume exceeds 5 msgs/min, preventing silent data loss during firmware updates.",
+      "adr_updated": "0003"
+    },
+    {
+      "objection_id": "OBJ-RES-08",
+      "disposition": "mitigated",
+      "resolution": "Decoupled runtime packet verification from synchronous Secret Manager/KMS calls: Cloud Run ingress instances pre-fetch and cache HMAC signing keys in process memory upon startup with a 1-hour TTL and asynchronous background rotation. HMAC-SHA256 signature verification executes entirely in-memory (<0.05ms) without external API dependencies, eliminating single points of failure from transient GCP Secret Manager/KMS rate-limiting or outages.",
+      "adr_updated": "0004"
+    },
+    {
+      "objection_id": "OBJ-RES-09",
+      "disposition": "mitigated",
+      "resolution": "Configured Cloud Armor policy separation with static plant CIDR allowlisting and 5x burst headroom: machine-to-machine industrial plant gateways operate under dedicated Cloud Armor security rules with static IP allowlisting and burst thresholds sized to 5x peak baseline (50,000 req/sec headroom), ensuring emergency alarm bursts and simultaneous plant trip packets are never misclassified or throttled as DDoS floods.",
+      "adr_updated": "0004"
+    },
+    {
+      "objection_id": "OBJ-COST-01",
+      "disposition": "mitigated",
+      "resolution": "Eliminated high-frequency writes to Firestore: raw 100ms telemetry is routed strictly to BigQuery, while Firestore is restricted to 1 Hz state snapshot aggregates and discrete state transition events. This reduces document write operations by over 90% (from 100,000 writes/sec down to <1,000 writes/sec), bounding Firestore operational costs to under $1,500/month instead of $465,000/month.",
+      "adr_updated": "0002"
+    },
+    {
+      "objection_id": "OBJ-COST-02",
+      "disposition": "mitigated",
+      "resolution": "Adopted in-memory micro-batching with BigQuery Storage Write API: Cloud Run ingestion consumers aggregate telemetry records into 5-second or 1,000-record in-memory batches before streaming via the BigQuery Storage Write API in committed mode. This reduces individual storage write operations and network connections by 90-95%, drastically minimizing streaming ingestion surcharges.",
+      "adr_updated": "0002"
+    },
+    {
+      "objection_id": "OBJ-COST-03",
+      "disposition": "mitigated",
+      "resolution": "Optimized Cloud Run concurrency and edge micro-batching: edge agents bundle 100ms readings into 1-second multi-frame payloads, reducing HTTP ingress request volume from 100,000 req/sec to 10,000 req/sec. Cloud Run container concurrency is tuned to 80 concurrent requests per instance with baseline min-instances, reducing the required active container fleet to ~125 instances while preserving scale-to-zero economics for ephemeral PR adversarial CI/CD jobs and eliminating dedicated GKE cluster management costs.",
+      "adr_updated": "0001"
+    },
+    {
+      "objection_id": "OBJ-COST-04",
+      "disposition": "mitigated",
+      "resolution": "Implemented edge 1-second multi-frame aggregation: edge agents bundle 10 consecutive 100ms sensor readings into a single 1-second multi-frame Pub/Sub message payload. This reduces Pub/Sub message publishing and delivery operations from 260 billion/month down to 26 billion/month, achieving a 90% cost reduction (> $9,000/month saved) while retaining full 100ms temporal granularity.",
+      "adr_updated": "0003"
+    },
+    {
+      "objection_id": "OBJ-COST-05",
+      "disposition": "mitigated",
+      "resolution": "Eliminated per-request Secret Manager API calls via local in-memory key caching: signing keys are cached in container memory with a 1-hour TTL, reducing Secret Manager API calls to fewer than 10,000 operations per month (~$0.00/month). In addition, 1-second edge payload batching reduces HMAC-SHA256 signature verification CPU tax at Cloud Run ingress by 90%.",
+      "adr_updated": "0004"
+    },
+    {
+      "objection_id": "OBJ-SIM-01",
+      "disposition": "rejected",
+      "resolution": "Synchronous in-memory processing was evaluated and rejected: Pub/Sub is essential to decouple high-throughput HTTP ingress from downstream consumers (BigQuery historian archiving, dashboard state updates, and emergency alert dispatching). Sub-50ms fail-safe actuation is already executed autonomously at the edge, so Pub/Sub is not in the physical safety actuation critical path. Removing Pub/Sub would introduce tight coupling, where any downstream analytical latency spike would cascade back into the ingress gateway and drop live sensor feeds.",
+      "adr_updated": "0003"
+    },
+    {
+      "objection_id": "OBJ-SIM-02",
+      "disposition": "rejected",
+      "resolution": "A single unified datastore was evaluated and rejected: Firestore provides sub-10ms operational queries and real-time frontend snapshot listeners required by the Operations Dashboard, but is economically unsuited for bulk time-series storage. Conversely, BigQuery provides serverless SQL analytics across petabytes of historical sensor records, but cannot serve low-latency real-time frontend listener subscriptions. The decoupled dual-store architecture cleanly separates operational UI state from analytical time-series storage without complex two-phase commits.",
+      "adr_updated": "0002"
+    },
+    {
+      "objection_id": "OBJ-SIM-03",
+      "disposition": "rejected",
+      "resolution": "A pure edge-only or pure cloud-only architecture was evaluated and rejected: cloud-only violates the non-negotiable sub-50ms emergency hardware fail-safe actuation and offline resilience requirements (FR-04, US5) under WAN partitions; edge-only prevents centralized cross-plant analytics, fleet monitoring, and automated PR adversarial CI/CD simulation (US3). The hybrid architecture cleanly isolates offline telemetry replay by routing backfilled data directly to BigQuery via the Storage Write API with an 'is_replayed: true' attribute, eliminating dual-write operational state conflicts.",
+      "adr_updated": "0001"
+    },
+    {
+      "objection_id": "OBJ-SIM-04",
+      "disposition": "rejected",
+      "resolution": "Relying solely on mTLS without defense-in-depth was evaluated and rejected: mTLS terminates at the external load balancer, leaving internal traffic susceptible to lateral movement or misconfigured proxies in critical industrial chemical infrastructure. End-to-end payload-level HMAC-SHA256 signing guarantees cryptographic non-repudiation directly from the physical field device to the evaluation engine. Identity-Aware Proxy (IAP) exclusively secures human web dashboard access with MFA and IAM, completely decoupled from machine-to-machine sensor ingress. Each security layer mitigates a distinct threat vector with zero runtime coupling.",
+      "adr_updated": "0004"
+    }
+  ]
+}
