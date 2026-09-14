@@ -1,0 +1,346 @@
+openapi: 3.0.3
+info:
+  title: "Observability Dashboard & Alerting Service API"
+  version: "1.0.0"
+  description: "Machine-readable OpenAPI contract for the Observability Dashboard subsystem of the Industrial Gas Flow Regulator Gate (IGFRG), providing operational health monitoring, incident triage, root-cause summaries, and critical alert dispatching."
+paths:
+  /v1/dashboard/health:
+    get:
+      operationId: "getDashboardHealth"
+      summary: "Retrieve real-time flow and gate health status"
+      description: "Queries operational state from Firestore to return real-time health metrics, operational gate modes, and latest sensor metrics across active gas regulator gates."
+      parameters:
+        - name: zone_id
+          in: query
+          required: false
+          description: "Optional industrial plant zone filter (e.g. zone-a, zone-b)."
+          schema:
+            type: string
+        - name: regulator_id
+          in: query
+          required: false
+          description: "Optional specific regulator ID to query."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Successfully retrieved dashboard operational health snapshot."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardHealthResponse"
+        "400":
+          description: "Invalid query parameters provided."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Specified regulator or zone not found."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "Internal server error querying operational state repository."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/dashboard/incidents:
+    get:
+      operationId: "getIncidentLogs"
+      summary: "Query incident logs with root cause summaries"
+      description: "Retrieves safety violation incidents, trip details, pre-trip sensor snapshot telemetry, and automated root cause summaries for operations triage."
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: "Maximum number of incident records to return (default 50, max 200)."
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: severity
+          in: query
+          required: false
+          description: "Filter incidents by severity level (WARNING, CRITICAL, EMERGENCY)."
+          schema:
+            type: string
+            enum: ["WARNING", "CRITICAL", "EMERGENCY"]
+        - name: regulator_id
+          in: query
+          required: false
+          description: "Filter incidents by specific regulator ID."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Successfully retrieved incident logs and root cause summaries."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentListResponse"
+        "400":
+          description: "Invalid query parameters or filter criteria."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Target regulator not found when filtering by regulator_id."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "Internal server error retrieving incident logs."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/dashboard/alerts:
+    post:
+      operationId: "dispatchAlertNotification"
+      summary: "Dispatch critical incident notification to on-call engineers"
+      description: "Dispatches a high-priority incident alert to on-call engineering channels (PagerDuty, Cloud Monitoring) within the mandated sub-60s notification window."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertDispatchRequest"
+      responses:
+        "201":
+          description: "Alert notification successfully dispatched and routed."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertDispatchResponse"
+        "400":
+          description: "Invalid or malformed alert dispatch payload."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Referenced incident ID does not exist in datastore."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "Internal server error dispatching alert notification."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    DashboardHealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - active_regulators_count
+        - healthy_count
+        - degraded_count
+        - tripped_count
+        - gates
+      properties:
+        status:
+          type: string
+          enum: ["HEALTHY", "DEGRADED", "CRITICAL"]
+          description: "Overall fleet operational status."
+        timestamp:
+          type: string
+          format: date-time
+          description: "ISO 8601 UTC timestamp of health snapshot generation."
+        active_regulators_count:
+          type: integer
+          description: "Total active gas regulator streams monitored."
+        healthy_count:
+          type: integer
+          description: "Count of regulators operating normally within safety bounds."
+        degraded_count:
+          type: integer
+          description: "Count of regulators in warning or offline fallback mode."
+        tripped_count:
+          type: integer
+          description: "Count of regulators in fail-safe trip or closed state."
+        gates:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegulatorGateHealth"
+          description: "List of individual regulator gate operational states."
+
+    RegulatorGateHealth:
+      type: object
+      required:
+        - regulator_id
+        - zone_id
+        - gate_status
+        - current_flow_sccm
+        - current_pressure_psi
+        - current_temperature_c
+        - variance_status
+        - last_heartbeat
+      properties:
+        regulator_id:
+          type: string
+          description: "Unique identifier of the gas regulator."
+        zone_id:
+          type: string
+          description: "Physical industrial zone identifier."
+        gate_status:
+          type: string
+          enum: ["NORMAL_REGULATION", "MINIMUM_SAFE_FLOW", "FAIL_SAFE_HOLD", "CLOSE_GATE_LOCKED", "OFFLINE_FALLBACK"]
+          description: "Current physical valve gate state."
+        current_flow_sccm:
+          type: number
+          format: double
+          description: "Current gas flow rate in Standard Cubic Centimeters per Minute (sccm)."
+        current_pressure_psi:
+          type: number
+          format: double
+          description: "Current line pressure in PSI."
+        current_temperature_c:
+          type: number
+          format: double
+          description: "Current line gas temperature in Celsius."
+        variance_status:
+          type: string
+          enum: ["NORMAL", "FROZEN_SUSPECTED", "ERRATIC"]
+          description: "Telemetry signal variance evaluation."
+        last_heartbeat:
+          type: string
+          format: date-time
+          description: "Timestamp of last validated telemetry frame."
+
+    IncidentListResponse:
+      type: object
+      required:
+        - incidents
+        - total_count
+        - timestamp
+      properties:
+        incidents:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentRecord"
+          description: "List of safety trip incidents matching query criteria."
+        total_count:
+          type: integer
+          description: "Total matching incident records."
+        timestamp:
+          type: string
+          format: date-time
+          description: "Timestamp of query execution."
+
+    IncidentRecord:
+      type: object
+      required:
+        - incident_id
+        - regulator_id
+        - severity
+        - trip_reason
+        - root_cause_summary
+        - triggered_at
+        - status
+      properties:
+        incident_id:
+          type: string
+          description: "Unique UUID identifier of the incident."
+        regulator_id:
+          type: string
+          description: "Identifier of the tripped gas regulator."
+        severity:
+          type: string
+          enum: ["WARNING", "CRITICAL", "EMERGENCY"]
+          description: "Severity categorization of the incident."
+        trip_reason:
+          type: string
+          description: "Specific rule or correlation violation that triggered the trip."
+        root_cause_summary:
+          type: string
+          description: "Automated root-cause diagnosis summary (e.g., pressure-flow divergence, frozen variance)."
+        triggered_at:
+          type: string
+          format: date-time
+          description: "Exact ISO 8601 timestamp when the safety trip was initiated."
+        status:
+          type: string
+          enum: ["OPEN", "ACKNOWLEDGED", "RESOLVED"]
+          description: "Current operational resolution status of the incident."
+        pre_trip_telemetry_ref:
+          type: string
+          description: "Storage URI or Firestore path to high-frequency 60s pre-trip telemetry snapshot."
+
+    AlertDispatchRequest:
+      type: object
+      required:
+        - incident_id
+        - channel
+        - message
+      properties:
+        incident_id:
+          type: string
+          description: "UUID of the incident to alert for."
+        channel:
+          type: string
+          enum: ["PAGERDUTY", "CLOUD_MONITORING", "SMS_SAFETY_OFFICER"]
+          description: "Target notification channel."
+        message:
+          type: string
+          description: "Custom operational triage note or urgency context from the dispatcher."
+
+    AlertDispatchResponse:
+      type: object
+      required:
+        - dispatch_id
+        - incident_id
+        - channel
+        - status
+        - dispatched_at
+        - latency_ms
+      properties:
+        dispatch_id:
+          type: string
+          description: "Unique delivery receipt identifier for the dispatch."
+        incident_id:
+          type: string
+          description: "UUID of the incident routed."
+        channel:
+          type: string
+          description: "Destination notification channel."
+        status:
+          type: string
+          enum: ["DELIVERED", "QUEUED", "FAILED"]
+          description: "Delivery status of the alert notification."
+        dispatched_at:
+          type: string
+          format: date-time
+          description: "ISO 8601 timestamp when alert notification was dispatched."
+        latency_ms:
+          type: integer
+          description: "Elapsed routing latency in milliseconds (must be <= 60000ms)."
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: "Machine-readable error classification code."
+        message:
+          type: string
+          description: "Human-readable explanation of the error."
+        details:
+          type: object
+          description: "Additional structured diagnostics without stack traces."

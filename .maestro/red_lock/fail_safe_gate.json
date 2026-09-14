@@ -1,0 +1,9 @@
+{
+  "subsystem": "fail_safe_gate",
+  "locked_at": "2026-09-14T10:23:42.621875+00:00",
+  "pytest_exit_code": 1,
+  "files": {
+    "tests/contract/fail_safe_gate/test_contract_fail_safe_gate.py": "d96781e5e8fce3f562f33cdc740fd05d8a08beea176a4d2697f489bac5fd5de3",
+    "tests/behavioral/fail_safe_gate/test_behavioral_fail_safe_gate.py": "3d46476320c0ed78362c6a63f965d9b123138e2e3cfff3ea4353396989ef2747"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "critic": "resilience",
+  "objections": [
+    {
+      "id": "OBJ-RES-01",
+      "challenged_adr": "0001",
+      "severity": "critical",
+      "claim": "Undefined edge-to-cloud split for the Fail-Safe Gate creates a catastrophic close-gate race condition: architecture.md allocates src/modules/fail_safe_gate/ simultaneously to local plant edge hardware for sub-50ms physical actuation and to Cloud Run consumers processing Pub/Sub events. Under transient network jitter, packet delays, or network partitions, the cloud gate and edge gate can evaluate divergent or lagged telemetry states, resulting in conflicting actuator commands, dual-master split-brain valve control, or failure to trigger physical shutoff within the 50ms envelope when relying on cloud-side validation."
+    },
+    {
+      "id": "OBJ-RES-02",
+      "challenged_adr": "0001",
+      "severity": "high",
+      "claim": "Lack of backpressure, buffer bounding, and disk exhaustion safeguards during offline fallback mode: ADR-0001 stipulates that the edge agent caches telemetry locally during WAN disconnects and replays to Cloud Run upon reconnection. At 10,000 streams transmitting every 100ms (100,000 packets/sec), edge storage will rapidly exhaust local RAM or disk capacity during extended outages, causing edge compute crash loops, total loss of local fail-safe execution, or catastrophic unbuffered data drop without defined shedding or priority-tiering policies."
+    },
+    {
+      "id": "OBJ-RES-03",
+      "challenged_adr": "0001",
+      "severity": "high",
+      "claim": "Reconnection retry storms and cascading ingress collapse: When network connectivity is restored after a partition, replaying queued edge telemetry concurrently across multiple edge gates will inject a massive thundering herd against External HTTPS Load Balancer and Cloud Run Ingestion endpoints, triggering rate-limiting, Cloud Run cold-start queuing, thread exhaustion, and latency spikes exceeding the 150ms processing budget for real-time live sensor traffic."
+    },
+    {
+      "id": "OBJ-RES-04",
+      "challenged_adr": "0002",
+      "severity": "high",
+      "claim": "Firestore write throughput saturation and state inconsistency under high-frequency stream updates: ADR-0002 relies on Firestore for operational state and real-time dashboard snapshot listeners, while receiving 10,000 sensor streams at 100ms intervals. Firestore document write limits (nominal 1 write/sec per document, subject to contention limits) and regional write rate constraints will lead to write queuing, latency degradation, state divergence between edge reality and operator dashboards, and potential drop of critical safety trip events."
+    },
+    {
+      "id": "OBJ-RES-05",
+      "challenged_adr": "0002",
+      "severity": "medium",
+      "claim": "BigQuery streaming ingestion buffer latency creates an analytical blind spot during rapid incident escalation: ADR-0002 acknowledges streaming buffer delays of multiple seconds to minutes before raw records are queryable in analytical SQL views. Relying on BigQuery for historical sensor drift analysis and root-cause summaries during active, escalating industrial incidents leaves operators and automated incident responders blind to immediate preceding multi-sensor telemetry trends."
+    },
+    {
+      "id": "OBJ-RES-06",
+      "challenged_adr": "0003",
+      "severity": "high",
+      "claim": "Pub/Sub out-of-order delivery and lack of stream partitioning causes state corruption and spurious safety trips: ADR-0003 selects Google Cloud Pub/Sub with at-least-once delivery without enforcing ordering keys per sensor stream. Out-of-order packet delivery to fail-safe gate evaluators causes artificial variance anomalies (false frozen telemetry trips) or out-of-sequence pressure-temperature readings, triggering unjustified emergency plant shutdowns or masking actual transient rate-of-change spikes."
+    },
+    {
+      "id": "OBJ-RES-07",
+      "challenged_adr": "0003",
+      "severity": "medium",
+      "claim": "Dead-Letter Queue (DLQ) retry amplification and silent data loss under schema mismatch: ADR-0003 shunts malformed or unprocessable sensor packets directly to dead-letter-telemetry. In the event of an edge firmware update or schema evolution mismatch during deployment, high-throughput telemetry streams (up to 100k msgs/sec) will silently drain into the DLQ without alerting or backpressure to the edge, causing unrecoverable data loss in the historian and blindness in the cloud monitoring layer."
+    },
+    {
+      "id": "OBJ-RES-08",
+      "challenged_adr": "0004",
+      "severity": "high",
+      "claim": "Synchronous runtime dependency on Cloud Secret Manager and Cloud KMS creates single points of failure for edge ingress: ADR-0004 and architecture.md specify that Cloud Run ingress verifies edge HMAC-SHA256 signatures by dynamically fetching keys from Secret Manager and decrypting storage with KMS. Transient GCP API rate limits, regional KMS/Secret Manager outages, or network hiccups will cascade into ingress verification failures, dropping all valid industrial sensor streams and falsely indicating edge compromise or sensor failure."
+    },
+    {
+      "id": "OBJ-RES-09",
+      "challenged_adr": "0004",
+      "severity": "medium",
+      "claim": "Cloud Armor rate limiting and volumetric DDoS filtering risks dropping legitimate emergency burst telemetry: ADR-0004 specifies Cloud Armor IP filtering and DDoS defense at ingress. During plant-wide safety events or emergency shutdowns where thousands of sensors simultaneously burst alarm and trip packets, Cloud Armor rate-limiting thresholds and WAF heuristics risk misclassifying sensor surges as Layer 7 flood attacks, dropping critical telemetry and delaying incident notifications beyond the 60-second SLO."
+    }
+  ]
+}

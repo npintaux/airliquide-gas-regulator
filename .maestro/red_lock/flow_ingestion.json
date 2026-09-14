@@ -1,0 +1,9 @@
+{
+  "subsystem": "flow_ingestion",
+  "locked_at": "2026-09-14T10:24:07.003959+00:00",
+  "pytest_exit_code": 1,
+  "files": {
+    "tests/contract/flow_ingestion/test_contract_flow_ingestion.py": "a7da68fa5f51d660ce42c6f550216de38de339f6f75cb042e23364344323c7cd",
+    "tests/behavioral/flow_ingestion/test_behavioral_flow_ingestion.py": "d5be13a69791200de1a2cdbf484ca5121694365e90e71a50dadb753f980ea3a5"
+  }
+}

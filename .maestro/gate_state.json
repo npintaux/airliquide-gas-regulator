@@ -1,0 +1,168 @@
+{
+  "completed_stages": [
+    "gate-0",
+    "gate-adversarial",
+    "gate-0.5",
+    "gate-1",
+    "gate-security",
+    "gate-2",
+    "gate-3",
+    "gate-4"
+  ],
+  "remediation_attempts": {
+    "gate-0": 0,
+    "gate-adversarial": 0,
+    "gate-0.5": 0,
+    "gate-1": 0,
+    "gate-security": 0,
+    "gate-2:flow_ingestion": 0,
+    "gate-2:fail_safe_gate": 0,
+    "gate-2:observability_dashboard": 0,
+    "gate-3:observability_dashboard": 0,
+    "gate-4:observability_dashboard": 0
+  },
+  "execution_history": [
+    {
+      "stage": "gate-0",
+      "subsystem": "",
+      "exit_code": 127,
+      "attempt": 1,
+      "passed": false,
+      "timestamp": "2026-09-14T10:07:01.882066+00:00",
+      "stdout_snippet": "==================================================\n\ud83c\udfaf Running Maestro Mechanical Gates [Stage: gate-0]\n==================================================\n\u25b6 [Gate 0] Checking ADR Structural & Sequencing Rules...\n",
+      "stderr_snippet": "/home/npintaux/.gemini/config/plugins/maestro/scripts/run_gate_suite.sh: line 23: uv: command not found\n"
+    },
+    {
+      "stage": "gate-0",
+      "subsystem": "",
+      "exit_code": 0,
+      "attempt": 2,
+      "passed": true,
+      "timestamp": "2026-09-14T10:10:47.598054+00:00",
+      "stdout_snippet": "orian-storage.md\",\n      \"adr_id\": \"0002\",\n      \"title\": \"Telemetry Operational State and Historian Datastore Strategy\",\n      \"status\": \"proposed\",\n      \"superseded_by\": null,\n      \"approved_by\": \"Pending Gate 0.5 Sign-off\",\n      \"violations\": [],\n      \"valid\": true\n    },\n    {\n      \"is_valid\": true,\n      \"filename\": \"0003-event-ingestion-messaging.md\",\n      \"adr_id\": \"0003\",\n      \"title\": \"Asynchronous Event Ingestion and Messaging Architecture\",\n      \"status\": \"proposed\",\n      \"superseded_by\": null,\n      \"approved_by\": \"Pending Gate 0.5 Sign-off\",\n      \"violations\": [],\n      \"valid\": true\n    },\n    {\n      \"is_valid\": true,\n      \"filename\": \"0004-zero-trust-and-madr-auth.md\",\n      \"adr_id\": \"0004\",\n      \"title\": \"Zero-Trust Perimeter, Cryptographic Signing, and Identity Architecture\",\n      \"status\": \"proposed\",\n      \"superseded_by\": null,\n      \"approved_by\": \"Pending Gate 0.5 Sign-off\",\n      \"violations\": [],\n      \"valid\": true\n    }\n  ]\n}\n\u2705 [Gate 0] Passed.\n",
+      "stderr_snippet": ""
+    },
+    {
+      "stage": "gate-0",
+      "subsystem": "",
+      "exit_code": 0,
+      "attempt": 1,
+      "passed": true,
+      "timestamp": "2026-09-14T10:16:17.616327+00:00",
+      "stdout_snippet": "emetry-and-historian-storage.md\",\n      \"adr_id\": \"0002\",\n      \"title\": \"Telemetry Operational State and Historian Datastore Strategy\",\n      \"status\": \"accepted\",\n      \"superseded_by\": null,\n      \"approved_by\": \"Lead Cloud Architect\",\n      \"violations\": [],\n      \"valid\": true\n    },\n    {\n      \"is_valid\": true,\n      \"filename\": \"0003-event-ingestion-messaging.md\",\n      \"adr_id\": \"0003\",\n      \"title\": \"Asynchronous Event Ingestion and Messaging Architecture\",\n      \"status\": \"accepted\",\n      \"superseded_by\": null,\n      \"approved_by\": \"Lead Cloud Architect\",\n      \"violations\": [],\n      \"valid\": true\n    },\n    {\n      \"is_valid\": true,\n      \"filename\": \"0004-zero-trust-and-madr-auth.md\",\n      \"adr_id\": \"0004\",\n      \"title\": \"Zero-Trust Perimeter, Cryptographic Signing, and Identity Architecture\",\n      \"status\": \"accepted\",\n      \"superseded_by\": null,\n      \"approved_by\": \"Lead Cloud Architect\",\n      \"violations\": [],\n      \"valid\": true\n    }\n  ]\n}\n\u2705 [Gate 0] Passed.\n",
+      "stderr_snippet": ""
+    },
+    {
+      "stage": "gate-adversarial",
+      "subsystem": "",
+      "exit_code": 0,
+      "attempt": 1,
+      "passed": true,
+      "timestamp": "2026-09-14T10:16:17.764409+00:00",
+      "stdout_snippet": "==================================================\n\ud83c\udfaf Running Maestro Mechanical Gates [Stage: gate-adversarial]\n==================================================\n\u25b6 [Gate Adversarial] Checking docs/adr/objections/ Structured Adversarial Review...\n{\n  \"valid\": true,\n  \"objections_count\": 18,\n  \"critic_counts\": {\n    \"cost\": 5,\n    \"resilience\": 9,\n    \"simplicity\": 4\n  },\n  \"resolved_count\": 18,\n  \"unresolved_count\": 0,\n  \"unresolved_ids\": []\n}\n\u2705 [Gate Adversarial] Passed.\n",
+      "stderr_snippet": ""
+    },
+    {
+      "stage": "gate-0.5",
+      "subsystem": "",
+      "exit_code": 0,
+      "attempt": 1,
+      "passed": true,
+      "timestamp": "2026-09-14T10:17:09.370263+00:00",
+      "stdout_snippet": "etry-and-historian-storage.md\",\n      \"adr_id\": \"0002\",\n      \"title\": \"Telemetry Operational State and Historian Datastore Strategy\",\n      \"status\": \"accepted\",\n      \"superseded_by\": null,\n      \"approved_by\": \"Lead Cloud Architect\",\n      \"violations\": [],\n      \"valid\": true\n    },\n    {\n      \"is_valid\": true,\n      \"filename\": \"0003-event-ingestion-messaging.md\",\n      \"adr_id\": \"0003\",\n      \"title\": \"Asynchronous Event Ingestion and Messaging Architecture\",\n      \"status\": \"accepted\",\n      \"superseded_by\": null,\n      \"approved_by\": \"Lead Cloud Architect\",\n      \"violations\": [],\n      \"valid\": true\n    },\n    {\n      \"is_valid\": true,\n      \"filename\": \"0004-zero-trust-and-madr-auth.md\",\n      \"adr_id\": \"0004\",\n      \"title\": \"Zero-Trust Perimeter, Cryptographic Signing, and Identity Architecture\",\n      \"status\": \"accepted\",\n      \"superseded_by\": null,\n      \"approved_by\": \"Lead Cloud Architect\",\n      \"violations\": [],\n      \"valid\": true\n    }\n  ]\n}\n\u2705 [Gate 0.5] Passed.\n",
+      "stderr_snippet": ""
+    },
+    {
+      "stage": "gate-1",
+      "subsystem": "",
+      "exit_code": 0,
+      "attempt": 1,
+      "passed": true,
+      "timestamp": "2026-09-14T10:17:12.114522+00:00",
+      "stdout_snippet": "  \"pillars_found\": [\n    \"system_design\",\n    \"operational_excellence\",\n    \"security\",\n    \"reliability\",\n    \"cost_optimization\",\n    \"performance\",\n    \"sustainability\"\n  ],\n  \"pillars_missing\": [],\n  \"pillars_uncited\": [],\n  \"frozen_services\": [\n    \"BigQuery\",\n    \"Cloud Armor\",\n    \"Cloud KMS\",\n    \"Cloud Logging\",\n    \"Cloud Monitoring\",\n    \"Cloud Run\",\n    \"Cloud Trace\",\n    \"Firestore\",\n    \"Identity-Aware Proxy\",\n    \"Pub/Sub\",\n    \"Secret Manager\"\n  ],\n  \"docs_citations_count\": 7,\n  \"gcp_services_mentioned\": [\n    \"Cloud Run\",\n    \"Firestore\",\n    \"BigQuery\",\n    \"Cloud Storage\",\n    \"Pub/Sub\",\n    \"Cloud Armor\",\n    \"Secret Manager\",\n    \"Cloud KMS\",\n    \"Cloud Logging\",\n    \"Cloud Monitoring\",\n    \"Cloud Trace\",\n    \"Cloud Build\",\n    \"Identity-Aware Proxy\",\n    \"IAP\",\n    \"Workload Identity\",\n    \"Cloud IAM\"\n  ],\n  \"subsystems_found\": [\n    \"fail_safe_gate\",\n    \"flow_ingestion\",\n    \"observability_dashboard\"\n  ],\n  \"violations\": [],\n  \"valid\": true\n}\n\u2705 [Gate 1] Passed.\n",
+      "stderr_snippet": ""
+    },
+    {
+      "stage": "gate-security",
+      "subsystem": "",
+      "exit_code": 0,
+      "attempt": 1,
+      "passed": true,
+      "timestamp": "2026-09-14T10:17:12.253510+00:00",
+      "stdout_snippet": "==================================================\n\ud83c\udfaf Running Maestro Mechanical Gates [Stage: gate-security]\n==================================================\n\u25b6 [Gate Security] Checking docs/security.md STRIDE Threat Model & IAM Matrix...\n\u2705 Security Architecture Audit PASSED for docs/security.md\n   - STRIDE Categories: 6/6 covered\n   - Service Accounts: 4 defined\n   - Cataloged Secrets: 5 entries\n   - Mermaid Boundaries: Present\n   - PRD NFR Citations: NFR-REL-1, NFR-REL-2, NFR-SEC-1, NFR-SEC-2\n\u2705 [Gate Security] Passed.\n",
+      "stderr_snippet": ""
+    },
+    {
+      "stage": "gate-2",
+      "subsystem": "flow_ingestion",
+      "exit_code": 0,
+      "attempt": 1,
+      "passed": true,
+      "timestamp": "2026-09-14T10:20:27.822494+00:00",
+      "stdout_snippet": "==================================================\n\ud83c\udfaf Running Maestro Mechanical Gates [Stage: gate-2]\n==================================================\n\u25b6 [Gate Contract] Validating Contract & Spec for 'src/modules/flow_ingestion/openapi.yaml'...\n{\n  \"is_valid\": true,\n  \"file_path\": \"src/modules/flow_ingestion/openapi.yaml\",\n  \"endpoints_found\": [\n    \"GET /v1/health\",\n    \"POST /v1/telemetry/batch\",\n    \"POST /v1/telemetry/ingest\"\n  ],\n  \"schemas_found\": [\n    \"ErrorResponse\",\n    \"HealthResponse\",\n    \"IngestBatchRequest\",\n    \"IngestBatchResponse\",\n    \"IngestTelemetryRequest\",\n    \"IngestTelemetryResponse\",\n    \"TelemetryFrame\"\n  ],\n  \"status_codes_checked\": [\n    \"200\",\n    \"201\",\n    \"400\",\n    \"401\",\n    \"422\",\n    \"500\"\n  ],\n  \"violations\": [],\n  \"selected_pattern\": \"pipeline-reducer\",\n  \"valid\": true\n}\n\u2705 [Gate Contract] Passed.\n",
+      "stderr_snippet": ""
+    },
+    {
+      "stage": "gate-2",
+      "subsystem": "fail_safe_gate",
+      "exit_code": 0,
+      "attempt": 1,
+      "passed": true,
+      "timestamp": "2026-09-14T10:20:28.035099+00:00",
+      "stdout_snippet": "==================================================\n\ud83c\udfaf Running Maestro Mechanical Gates [Stage: gate-2]\n==================================================\n\u25b6 [Gate Contract] Validating Contract & Spec for 'src/modules/fail_safe_gate/openapi.yaml'...\n{\n  \"is_valid\": true,\n  \"file_path\": \"src/modules/fail_safe_gate/openapi.yaml\",\n  \"endpoints_found\": [\n    \"GET /v1/gate/status\",\n    \"POST /v1/gate/close\",\n    \"POST /v1/gate/evaluate\",\n    \"POST /v1/gate/simulate\"\n  ],\n  \"schemas_found\": [\n    \"AdversarialScenario\",\n    \"AdversarialSimulationRequest\",\n    \"AdversarialSimulationResponse\",\n    \"AdversarialSimulationResult\",\n    \"CloseGateRequest\",\n    \"CloseGateResponse\",\n    \"ErrorResponse\",\n    \"EvaluationRequest\",\n    \"EvaluationResponse\",\n    \"GateStatusResponse\",\n    \"TelemetryReading\"\n  ],\n  \"status_codes_checked\": [\n    \"200\",\n    \"400\",\n    \"422\",\n    \"500\"\n  ],\n  \"violations\": [],\n  \"selected_pattern\": \"decision-list\",\n  \"valid\": true\n}\n\u2705 [Gate Contract] Passed.\n",
+      "stderr_snippet": ""
+    },
+    {
+      "stage": "gate-2",
+      "subsystem": "observability_dashboard",
+      "exit_code": 0,
+      "attempt": 1,
+      "passed": true,
+      "timestamp": "2026-09-14T10:20:28.202270+00:00",
+      "stdout_snippet": "==================================================\n\ud83c\udfaf Running Maestro Mechanical Gates [Stage: gate-2]\n==================================================\n\u25b6 [Gate Contract] Validating Contract & Spec for 'src/modules/observability_dashboard/openapi.yaml'...\n{\n  \"is_valid\": true,\n  \"file_path\": \"src/modules/observability_dashboard/openapi.yaml\",\n  \"endpoints_found\": [\n    \"GET /v1/dashboard/health\",\n    \"GET /v1/dashboard/incidents\",\n    \"POST /v1/dashboard/alerts\"\n  ],\n  \"schemas_found\": [\n    \"AlertDispatchRequest\",\n    \"AlertDispatchResponse\",\n    \"DashboardHealthResponse\",\n    \"ErrorResponse\",\n    \"IncidentListResponse\",\n    \"IncidentRecord\",\n    \"RegulatorGateHealth\"\n  ],\n  \"status_codes_checked\": [\n    \"200\",\n    \"201\",\n    \"400\",\n    \"404\",\n    \"500\"\n  ],\n  \"violations\": [],\n  \"selected_pattern\": \"repository-service\",\n  \"valid\": true\n}\n\u2705 [Gate Contract] Passed.\n",
+      "stderr_snippet": ""
+    },
+    {
+      "stage": "gate-3",
+      "subsystem": "observability_dashboard",
+      "exit_code": 1,
+      "attempt": 1,
+      "passed": false,
+      "timestamp": "2026-09-14T12:47:16.028481+00:00",
+      "stdout_snippet": "cess: no issues found in 13 source files\n\u25b6 [Gate Code Quality] Auditing 1-class-per-file and domain purity across module directories...\n  -> Auditing implementation for 'src/modules/observability_dashboard'...\n{\n  \"is_valid\": false,\n  \"subsystem\": \"observability_dashboard\",\n  \"files_checked\": [\n    \"__init__.py\",\n    \"adapters/__init__.py\",\n    \"adapters/alert_notifier_adapter.py\",\n    \"adapters/in_memory_telemetry_repository.py\",\n    \"domain/__init__.py\",\n    \"domain/alert_dispatcher.py\",\n    \"domain/exceptions.py\",\n    \"domain/models.py\",\n    \"domain/repository.py\",\n    \"domain/service.py\",\n    \"domain/summarizer.py\",\n    \"entrypoints/__init__.py\",\n    \"entrypoints/api.py\"\n  ],\n  \"violations\": [\n    \"adapters/in_memory_telemetry_repository.py: module is missing a docstring.\",\n    \"entrypoints/api.py: declares 2 public classes (AlertDispatchRequest, ErrorResponseDTO); enforce one public class per file.\",\n    \"entrypoints/api.py: module is missing a docstring.\"\n  ],\n  \"valid\": false\n}\n",
+      "stderr_snippet": "ath `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nERROR: Implementation audit failed with 3 violation(s):\n  - adapters/in_memory_telemetry_repository.py: module is missing a docstring.\n  - entrypoints/api.py: declares 2 public classes (AlertDispatchRequest, ErrorResponseDTO); enforce one public class per file.\n  - entrypoints/api.py: module is missing a docstring.\n"
+    },
+    {
+      "stage": "gate-3",
+      "subsystem": "observability_dashboard",
+      "exit_code": 0,
+      "attempt": 2,
+      "passed": true,
+      "timestamp": "2026-09-14T12:48:16.218772+00:00",
+      "stdout_snippet": "d'...\nAll checks passed!\n\u25b6 [Gate Code Quality] Running Ruff format check on 'src/modules/observability_dashboard'...\n14 files already formatted\n\u25b6 [Gate Code Quality] Running Mypy strict type check on 'src/modules/observability_dashboard'...\nSuccess: no issues found in 13 source files\n\u25b6 [Gate Code Quality] Auditing 1-class-per-file and domain purity across module directories...\n  -> Auditing implementation for 'src/modules/observability_dashboard'...\n{\n  \"is_valid\": true,\n  \"subsystem\": \"observability_dashboard\",\n  \"files_checked\": [\n    \"__init__.py\",\n    \"adapters/__init__.py\",\n    \"adapters/alert_notifier_adapter.py\",\n    \"adapters/in_memory_telemetry_repository.py\",\n    \"domain/__init__.py\",\n    \"domain/alert_dispatcher.py\",\n    \"domain/exceptions.py\",\n    \"domain/models.py\",\n    \"domain/repository.py\",\n    \"domain/service.py\",\n    \"domain/summarizer.py\",\n    \"entrypoints/__init__.py\",\n    \"entrypoints/api.py\"\n  ],\n  \"violations\": [],\n  \"valid\": true\n}\n\u2705 [Gate Code Quality] Passed.\n",
+      "stderr_snippet": "warning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n"
+    },
+    {
+      "stage": "gate-4",
+      "subsystem": "observability_dashboard",
+      "exit_code": 1,
+      "attempt": 1,
+      "passed": false,
+      "timestamp": "2026-09-14T12:48:18.532590+00:00",
+      "stdout_snippet": "==================================================\n\ud83c\udfaf Running Maestro Mechanical Gates [Stage: gate-4]\n==================================================\n\u25b6 [Gate RED-Lock] Verifying orthogonal test suite integrity for 'observability_dashboard'...\n{\n  \"valid\": false,\n  \"subsystem\": \"observability_dashboard\",\n  \"error\": \"Orthogonal test suite was tampered with during implementation.\",\n  \"tampered_files\": [\n    \"tests/contract/observability_dashboard/test_contract_observability_dashboard.py\",\n    \"tests/behavioral/observability_dashboard/test_behavioral_observability_dashboard.py\"\n  ],\n  \"removed_files\": [],\n  \"added_files\": []\n}\n",
+      "stderr_snippet": "warning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n"
+    },
+    {
+      "stage": "gate-4",
+      "subsystem": "observability_dashboard",
+      "exit_code": 0,
+      "attempt": 2,
+      "passed": true,
+      "timestamp": "2026-09-14T12:51:52.272991+00:00",
+      "stdout_snippet": " 100%\nsrc/modules/observability_dashboard/domain/models.py                                76      0   100%\nsrc/modules/observability_dashboard/domain/repository.py                            16      0   100%\nsrc/modules/observability_dashboard/domain/service.py                               60      0   100%\nsrc/modules/observability_dashboard/domain/summarizer.py                            15      0   100%\nsrc/modules/observability_dashboard/entrypoints/__init__.py                          0      0   100%\nsrc/modules/observability_dashboard/entrypoints/api.py                             113      0   100%\n--------------------------------------------------------------------------------------------------------------\nTOTAL                                                                             1302      0   100%\nRequired test coverage of 100% reached. Total coverage: 100.00%\n======================= 223 passed, 12 warnings in 2.15s =======================\n\u2705 [Gate Test Coverage] Passed.\n",
+      "stderr_snippet": "warning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\nwarning: `VIRTUAL_ENV=/home/npintaux/airliquide-gas-regulator/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n"
+    }
+  ],
+  "circuit_breaker_tripped": false,
+  "tripped_stage": ""
+}

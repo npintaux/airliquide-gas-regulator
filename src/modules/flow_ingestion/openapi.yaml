@@ -1,0 +1,360 @@
+openapi: 3.0.3
+info:
+  title: "Flow Ingestion Engine API"
+  version: "1.0.0"
+  description: "Machine-readable OpenAPI contract for the Flow Ingestion Engine subsystem (IGFRG), supporting single telemetry ingestion, micro-batch replay/ingestion, and service health monitoring."
+paths:
+  /v1/telemetry/ingest:
+    post:
+      operationId: "ingestTelemetry"
+      summary: "Ingest single telemetry packet"
+      description: "Ingests an industrial gas sensor telemetry packet, verifies HMAC-SHA256 signature, validates frame schema, evaluates rate/jitter, and publishes normalized telemetry to Pub/Sub."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestTelemetryRequest"
+      responses:
+        "201":
+          description: "Telemetry frame successfully validated, normalized, and published"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestTelemetryResponse"
+        "400":
+          description: "Malformed payload or syntax validation error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: "HMAC signature verification failed or missing authentication credentials"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: "Domain validation failure, rate/jitter violation, or corrupted sequence"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "Internal server error during processing or downstream Pub/Sub dispatch failure"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/telemetry/batch:
+    post:
+      operationId: "ingestTelemetryBatch"
+      summary: "Ingest micro-batched telemetry bundle"
+      description: "Ingests 1-second aggregated multi-frame arrays (nominal 10 frames) or offline replay batches from edge circular buffers with sequential monotonicity and jitter checking."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestBatchRequest"
+      responses:
+        "200":
+          description: "Batch bundle processed, normalized, and dispatched successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestBatchResponse"
+        "400":
+          description: "Malformed batch structure, empty frame list, or invalid array payload"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: "Batch HMAC signature invalid or edge device credentials expired"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: "Batch sequence discontinuity, out-of-order frame error, or rate violation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "Internal ingestion processing error or batch publication failure"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/health:
+    get:
+      operationId: "getHealth"
+      summary: "Subsystem health and readiness check"
+      description: "Returns health status of the Flow Ingestion Engine, including Pub/Sub connection readiness, HMAC key cache validity, and rate limiter status."
+      responses:
+        "200":
+          description: "Subsystem is healthy and ready to accept telemetry traffic"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "400":
+          description: "Invalid health query parameters"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: "Subsystem in degraded or unserviceable state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "Subsystem component failure, missing credentials, or downstream service unreachable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    TelemetryFrame:
+      type: object
+      required:
+        - plant_id
+        - regulator_id
+        - sensor_id
+        - sequence_number
+        - timestamp_ns
+        - flow_rate_sccm
+        - pressure_bar
+        - temperature_celsius
+        - status_flags
+      properties:
+        plant_id:
+          type: string
+          description: "Plant identifier (e.g. PLANT-BEL-01)"
+          example: "PLANT-BEL-01"
+        regulator_id:
+          type: string
+          description: "Gas regulator unit identifier"
+          example: "REG-OX-401"
+        sensor_id:
+          type: string
+          description: "Sensor stream identifier"
+          example: "FLOW-SN-8820"
+        sequence_number:
+          type: integer
+          format: int64
+          minimum: 0
+          description: "Monotonically increasing sequence number per stream"
+          example: 10452
+        timestamp_ns:
+          type: integer
+          format: int64
+          description: "Edge capture timestamp in Unix epoch nanoseconds"
+          example: 1726312800000000000
+        flow_rate_sccm:
+          type: number
+          format: double
+          description: "Standard cubic centimeters per minute (sccm)"
+          example: 2500.5
+        pressure_bar:
+          type: number
+          format: double
+          description: "Line pressure measurement in bar"
+          example: 16.2
+        temperature_celsius:
+          type: number
+          format: double
+          description: "Gas temperature measurement in degrees Celsius"
+          example: 21.4
+        status_flags:
+          type: integer
+          description: "Bitmask of sensor hardware diagnostic status flags"
+          example: 0
+
+    IngestTelemetryRequest:
+      type: object
+      required:
+        - frame
+        - hmac_signature
+        - key_id
+      properties:
+        frame:
+          $ref: "#/components/schemas/TelemetryFrame"
+        hmac_signature:
+          type: string
+          description: "Hex-encoded HMAC-SHA256 signature calculated over normalized frame payload"
+          example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        key_id:
+          type: string
+          description: "Identifier of the HMAC key version used for signing"
+          example: "edge-key-v1"
+        is_replayed:
+          type: boolean
+          default: false
+          description: "Indicates whether packet is replayed from edge offline circular buffer"
+
+    IngestTelemetryResponse:
+      type: object
+      required:
+        - status
+        - message_id
+        - stream_id
+        - sequence_number
+        - processed_at_ns
+      properties:
+        status:
+          type: string
+          enum: [accepted, duplicate, replayed]
+          description: "Ingestion outcome status"
+          example: "accepted"
+        message_id:
+          type: string
+          description: "Assigned Pub/Sub publication message ID or audit identifier"
+          example: "pubsub-msg-9948210"
+        stream_id:
+          type: string
+          description: "Ordering key format plant_id:regulator_id:sensor_id"
+          example: "PLANT-BEL-01:REG-OX-401:FLOW-SN-8820"
+        sequence_number:
+          type: integer
+          format: int64
+          description: "Ingested sequence number"
+          example: 10452
+        processed_at_ns:
+          type: integer
+          format: int64
+          description: "Cloud processing completion timestamp in nanoseconds"
+          example: 1726312800042000000
+
+    IngestBatchRequest:
+      type: object
+      required:
+        - plant_id
+        - regulator_id
+        - sensor_id
+        - batch_id
+        - frames
+        - hmac_signature
+        - key_id
+      properties:
+        plant_id:
+          type: string
+          example: "PLANT-BEL-01"
+        regulator_id:
+          type: string
+          example: "REG-OX-401"
+        sensor_id:
+          type: string
+          example: "FLOW-SN-8820"
+        batch_id:
+          type: string
+          description: "Unique batch identifier generated at edge"
+          example: "BATCH-20260914-1018-001"
+        is_replayed:
+          type: boolean
+          default: false
+          description: "Flag indicating whether batch originates from offline recovery replay"
+        frames:
+          type: array
+          items:
+            $ref: "#/components/schemas/TelemetryFrame"
+          description: "Ordered sequence of telemetry frames (typically 1-second bundle of 10 frames)"
+        hmac_signature:
+          type: string
+          description: "Hex-encoded HMAC-SHA256 signature calculated over ordered frames payload"
+          example: "a8f5f167f44f4964e6c998dee827110c4d474581f19d29efd3a0c4f87a8a1eb3"
+        key_id:
+          type: string
+          example: "edge-key-v1"
+
+    IngestBatchResponse:
+      type: object
+      required:
+        - batch_id
+        - stream_id
+        - frames_received
+        - frames_accepted
+        - frames_deduplicated
+        - is_replayed
+        - processed_at_ns
+      properties:
+        batch_id:
+          type: string
+          example: "BATCH-20260914-1018-001"
+        stream_id:
+          type: string
+          example: "PLANT-BEL-01:REG-OX-401:FLOW-SN-8820"
+        frames_received:
+          type: integer
+          example: 10
+        frames_accepted:
+          type: integer
+          example: 10
+        frames_deduplicated:
+          type: integer
+          example: 0
+        is_replayed:
+          type: boolean
+          example: false
+        processed_at_ns:
+          type: integer
+          format: int64
+          example: 1726312800095000000
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - subsystem
+        - version
+        - timestamp_ns
+        - pubsub_connected
+        - key_cache_valid
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          example: "healthy"
+        subsystem:
+          type: string
+          example: "flow_ingestion"
+        version:
+          type: string
+          example: "1.0.0"
+        timestamp_ns:
+          type: integer
+          format: int64
+          example: 1726312800100000000
+        pubsub_connected:
+          type: boolean
+          example: true
+        key_cache_valid:
+          type: boolean
+          example: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: "Machine-readable error category string"
+          example: "INVALID_SIGNATURE"
+        message:
+          type: string
+          description: "Human-readable diagnostic message"
+          example: "HMAC signature verification failed for key edge-key-v1"
+        details:
+          type: object
+          additionalProperties: true
+          description: "Optional structured violation metadata"

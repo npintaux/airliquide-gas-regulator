@@ -1,0 +1,35 @@
+{
+  "critic": "cost",
+  "objections": [
+    {
+      "id": "OBJ-COST-01",
+      "challenged_adr": "0002",
+      "severity": "critical",
+      "claim": "Unbounded Firestore document write costs at full sensor scale: Ingesting up to 10,000 concurrent streams at 100ms intervals generates 100,000 writes/sec (8.64 billion writes/day). At standard GCP Firestore pricing ($0.18 per 100,000 writes), persisting live stream telemetry directly into Firestore produces an unsustainable operational expense exceeding $15,500/day ($465,000/month), violating NFR Cost Optimization."
+    },
+    {
+      "id": "OBJ-COST-02",
+      "challenged_adr": "0002",
+      "severity": "high",
+      "claim": "BigQuery continuous high-frequency streaming ingestion overhead vs micro-batching: Ingesting 100,000 telemetry points per second via individual BigQuery Storage Write API streaming calls incurs substantial streaming ingestion surcharges ($0.025 per GB) and storage write API overhead (~8.64 billion rows/day, roughly 2.6 to 4.3 TB daily payload volume before compression). Without micro-batching or intermediate memory buffer aggregation in Pub/Sub or Cloud Run, streaming costs alone create an expensive inflection point compared to periodic batch loads."
+    },
+    {
+      "id": "OBJ-COST-03",
+      "challenged_adr": "0001",
+      "severity": "high",
+      "claim": "Continuous Cloud Run compute cost and egress/ingress trap for continuous telemetry: Cloud Run is touted for 'scale-to-zero' economics, but 10,000 persistent sensor feeds publishing every 100ms require sustained, round-the-clock compute capacity (minimum 100-300 concurrent container instances). Cloud Run never scales to zero under continuous production telemetry, incurring premium pricing per vCPU-second and GiB-second compared to provisioned GKE or regional Compute Engine instances, in addition to continuous cross-zone network ingress/egress charges through the HTTPS Load Balancer and Serverless VPC Access connectors."
+    },
+    {
+      "id": "OBJ-COST-04",
+      "challenged_adr": "0003",
+      "severity": "medium",
+      "claim": "Pub/Sub message volume and egress pricing inflection point at unaggregated scale: Publishing raw 100ms sensor payloads individually generates 260 billion Pub/Sub message operations monthly. At $40 per million operations (beyond the free tier), raw Pub/Sub message volume incurs over $10,000/month solely on message publication and subscription delivery fees, which could be reduced by orders of magnitude through local edge payload batching (e.g. 1-second multi-frame aggregation)."
+    },
+    {
+      "id": "OBJ-COST-05",
+      "challenged_adr": "0004",
+      "severity": "medium",
+      "claim": "High-throughput per-request cryptographic verification compute tax and Secret Manager access overhead: Verifying HMAC-SHA256 signatures on 100,000 raw HTTP requests per second requires massive compute overhead across the ingress Cloud Run fleet, and any naive runtime retrieval or validation checks against Secret Manager without aggressive local memory caching will trigger excessive Secret Manager API access charges ($0.03 per 10,000 API operations = $7,700+/month)."
+    }
+  ]
+}
