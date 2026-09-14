@@ -95,7 +95,7 @@ This journey covers Alexandre Morin’s interaction during an equipment malfunct
 
 # **User Stories**
 
-### **US1: Real-Time Telemetry Ingestion & Safety Envelope Validation**
+### **US-1: Real-Time Telemetry Ingestion & Safety Envelope Validation**
 * **Priority:** Must-Have
 * **Description:** As Dr. Elena Vance (Lead Data Scientist), I want industrial gas telemetry packets to be ingested and validated against static thresholds and dynamic correlations in real time, so that invalid readings or unsafe operational envelopes are caught before downstream execution.
 * **Acceptance Criteria:**
@@ -104,7 +104,7 @@ This journey covers Alexandre Morin’s interaction during an equipment malfunct
   - Cross-validate flow measurements against correlated secondary pressure and temperature readings to detect sensor drift.
   - Log validated telemetry to the historian and pass valid packets to downstream control systems.
 
-### **US2: Hardware Fail-Safe Interrupt Trigger**
+### **US-2: Hardware Fail-Safe Interrupt Trigger**
 * **Priority:** Must-Have
 * **Description:** As Alexandre Morin (Operations Manager & Safety Officer), I want the regulator gate to immediately dispatch a fail-safe hold or close-gate interrupt upon detecting critical telemetry violations or sensor lockup, so that hardware catastrophic damage and safety hazards are prevented.
 * **Acceptance Criteria:**
@@ -112,7 +112,7 @@ This journey covers Alexandre Morin’s interaction during an equipment malfunct
   - Detect sensor failure modes including frozen telemetry (lack of variance) and missing heartbeat intervals.
   - Automatically engage a minimum-safe-flow position or physical bypass when primary sensor streams drop.
 
-### **US3: Automated Adversarial Quality Gate for CI/CD Pipelines**
+### **US-3: Automated Adversarial Quality Gate for CI/CD Pipelines**
 * **Priority:** Should-Have
 * **Description:** As Marc Dubois (DevOps / SRE), I want pull requests changing regulator logic to undergo automated adversarial simulation tests, so that algorithm regressions or unsafe handling of edge anomalies block deployment before reaching production.
 * **Acceptance Criteria:**
@@ -120,7 +120,7 @@ This journey covers Alexandre Morin’s interaction during an equipment malfunct
   - Inject synthetic anomalies (sudden spikes, vacuum conditions, noisy turbulence) into the candidate regulator logic.
   - Block the PR and alert the engineer if candidate logic fails to enter a safe state within the mandated latency budget.
 
-### **US4: Real-Time Health & Incident Observability Dashboard**
+### **US-4: Real-Time Health & Incident Observability Dashboard**
 * **Priority:** Should-Have
 * **Description:** As Alexandre Morin (Operations Manager & Safety Officer), I want a centralized observability dashboard displaying live flow health, gate status, and root-cause summaries of safety violations, so that site operators can quickly triage incidents and dispatch maintenance.
 * **Acceptance Criteria:**
@@ -128,7 +128,7 @@ This journey covers Alexandre Morin’s interaction during an equipment malfunct
   - Show incident logs with automated root-cause summaries upon safety threshold trips or sensor dropouts.
   - Route critical incident notifications to on-call engineers via integrated alert channels within 60 seconds.
 
-### **US5: Edge-Safe Offline Fallback Mode**
+### **US-5: Edge-Safe Offline Fallback Mode**
 * **Priority:** Could-Have
 * **Description:** As Alexandre Morin (Operations Manager & Safety Officer), I want the regulator gate to fall back to a local cached safety policy during complete cloud network disconnects, so that site safety is sustained without dependence on external connectivity.
 * **Acceptance Criteria:**
