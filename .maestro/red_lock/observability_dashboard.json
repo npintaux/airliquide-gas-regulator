@@ -1,0 +1,9 @@
+{
+  "subsystem": "observability_dashboard",
+  "locked_at": "2026-09-14T10:23:44.594782+00:00",
+  "pytest_exit_code": 1,
+  "files": {
+    "tests/contract/observability_dashboard/test_contract_observability_dashboard.py": "86d4b071713295df1b706c3f974e76f96a97c7fe953f0e4349c986e5445f0e28",
+    "tests/behavioral/observability_dashboard/test_behavioral_observability_dashboard.py": "85dfc2c2c827e2ab2da38aafee17c4f215f1d212c2e8f36eebc1a807f31e575c"
+  }
+}
